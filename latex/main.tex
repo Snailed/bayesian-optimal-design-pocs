@@ -1,0 +1,45 @@
+% \PassOptionsToPackage{usenames, dvipsnames}{color}
+% \UseRawInputEncoding
+
+\documentclass[12pt,usenames]{article}
+\usepackage[a4paper, hmargin={2.8cm, 4.8cm}, vmargin={2.5cm, 2.5cm}, marginparwidth=100pt]{geometry}  % Geometri-pakke: Styrer bl.a. maginer    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[utf8]{inputenc}
+
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\newcommand{\Perp}{\perp \! \! \! \perp}
+\usepackage{bm}
+% \usepackage{txfonts}
+
+\usepackage{mathtools}
+
+\usepackage{float}
+
+\usepackage{appendix}
+
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{xcolor}
+\usepackage{minted}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\usepackage{listings}
+\newcommand{\todo}[1]{\marginpar{\color{red}TODO:\color{black}\ #1}}
+
+
+\title{Bayesian Optimal Design - Weekly Report}
+\author{Rasmus Hag Løvstad, \texttt{pgq596}}
+\date{\today}
+
+\graphicspath{ {./assets} }
+\begin{document}
+\maketitle
+\include{week1}
+\end{document}
+
