@@ -2,6 +2,7 @@
 \subsection{Objective}
 The objective of this week is to explore the basics of probabilistic machine learning by implementing a Bayesian linear regression model 
 and explore how it is affected by its different hyperparameters like choice of prior as well as the variance and quantity of data points.
+\todo{Notes from meeting: Make 2D plot over parameter space that shows how the posterior moves from the prior. Update from Oswin's notes}
 \subsection{Theory}
 The linear model I've chosen to implement is based on the one described in the lecture notes for the PML course.\\ \todo{add citations. Rough draft - terminology will be revised later}
 Given a dataset $\mathcal{D}$ of $\ell$ datapoints, we let each datapoint $i$ consist of a vector of controlled variables $\mathbf{x}^{(i)}$ and some target variable $y^{(i)}$. The $\mathbf{x}$'s are encoded in a $\ell \times d$ matrix $\mathcal{X}$ and the $y$'s in a $\ell$ length vector.
