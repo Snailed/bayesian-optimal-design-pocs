@@ -54,7 +54,7 @@ If one implements the optimization using \texttt{autograd.np}, the gradient can 
 \begin{figure}
   \centering
   \includegraphics[width=0.8\textwidth]{week2/BFGS.png}
-  \caption{BFGS algorithm optimizing for the most mutual information}
+  \caption{BFGS algorithm optimizing for the most mutual information. The contours represent the mutual information.}
   \label{fig:BFGS}
 \end{figure}
 Running the BFGS algorithm 5 times with random start points over $I(\B{d})$ with $\Sigma_\theta=\begin{bmatrix}7.9 & 3 \\ 4 & 5\end{bmatrix}$ gives the plot seen in Figure \ref{fig:BFGS}. The algorithm usually converges after about 10 steps or so.
