@@ -1,0 +1,22 @@
+ We can try to approximate the outer integral by sampling: picking a set of $\theta$'s and then averaging the result of these.
+Each $\B{y}$ can then be seen as a function of $\B{d}$ and $\theta_i$ of the form $\B{y}=\theta_i^T\B{d} + \epsilon$ where $\epsilon \sim \mathcal{N}(0, \sigma^2_\B{y})$.
+Thus, we can also approximate the inner integral by sampling $\epsilon$ from $\mathcal{N}(0, \sigma^2_\B{y})$. Thus we get the form
+$$= c + \frac{1}{N}\sum_{i=1}^Np(\B{y}|\theta_i, \B{d})p(\theta_i)\frac{\partial }{\partial \B{d}}\log p(\theta_i |\B{y}, \B{d})(\log p(\theta_i |\B{y}, \B{d}) + 1)
+$$
+where $\B{y}=\theta_i^T\B{d} + \epsilon$.\\
+Now, let us consider the posterior $p(\theta_i|\B{y}, \B{d})$. This is the distribution that we try to approximate when performing variational inference. 
+Thus we can expect our variational distribution $q(\theta_i)$ to reasonably approximate it after our inference algorithm has run.
+Our inner variational inference algorithm is also dependent on the datapoints $\B{d}$ and $\B{y}$ which we from now on will denote as $w=(\B{d}, \B{y})$.
+Thus, we can regard $\frac{\partial }{\partial \B{d}}\log p(\theta_i|\B{y}, \B{d})$ as
+the derivative (in regards to $\B{d}$) of our variational distribution, evaluated at some point $\B{w}^*$ (which is the best possible configuration of parameters given $\B{y}$ and $\B{d}$).\\
+% Being that our 
+% Our inference algorithm takes $\B{y}$ and $\B{d}$ as input as well, which we will call $\B{w}$.
+% Evaluating $\frac{\partial }{\partial \B{d}}\log p(\theta_i|\B{y}, \B{d})$ can thus take the form:
+$$\frac{\partial }{\partial \B{d}}\log p(\theta_i|\B{y}, \B{d}) = \frac{\partial }{\partial \B{d}}\log q_\B{w}(\theta_i)\Bigr\rvert_{\B{w} = \B{w}^*(\B{y}, \B{d})}$$
+Since $\B{w}$ is a function of $\B{d}$, a small change in $\B{d}$ is subsequently a small change in $\B{w}$. 
+We model this by multiplying the change of $\log q_\B{w}(\theta_i)$ by $\B{w}$ with the change of $\B{w}$ by $\B{d}$.
+$$=\frac{\partial}{\partial \B{w}}\log q_\B{w}(\theta_i)\Bigr\rvert_{\B{w} = \B{w}^*(\B{y}, \B{d})}\frac{\partial}{\partial \B{d}}\B{w}^*(\B{y},\B{d})$$
+This gives us what the litterature calls the \textit{indirect gradient} \todo{check if true, add citation}.
+Calculating the first part of this is rather simple through automatic differentiation.
+The second part requires a bit more carefulness, and can be achieved through using the Implicit Function Theorem:
+If for some $(\B{d}', \B{w}')$, $\frac{\partial }{\partial \B{w}}\log q_\B{w} (\theta_i)\Bigr\rvert_{\B{w} = \B{w}^*(\B{y}, \B{d})} = 0$
