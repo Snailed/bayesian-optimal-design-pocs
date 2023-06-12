@@ -12,9 +12,9 @@ The Bayesian Optimal Design problem is about finding a design $\B{d}$ from a des
 For this project, we wish to maximize the expected information gain from the prior to the posterior.
 % For this project, that utility function is the mutual information gained from an experiment by measuring at "location" $\B{d}$.\\
 To find the optimal design, we want to find a maximizer $\B{d}^*$ defined as such:
-\begin{equation}\B{d}^* = \arg \max_{\B{d}\in \B{D}} I(\B{d})\end{equation}
+\begin{equation}\label{eq:bayesian-optimal}\B{d}^* = \arg \max_{\B{d}\in \B{D}} I(\B{d})\end{equation}
 Where $I(\B{d})$ is the \textit{Mutual Information} between the prior and posterior when adjusted for data observed at $\B{d}$.\\
-\subsubsection{Mutual Information}
+\subsubsection{The Nature of the Mutual Information metric}
 The amount of information of an experiment is often defined as the negative differential entropy defined as such\cite{lindley56}:
 \begin{equation}H(X) = \int_{X}p(x)\log p(x)dx\end{equation}
 Thus, the information known before $\B{y}$ is observed from $\B{d}$ is
@@ -44,73 +44,73 @@ makes it such that we only regard the expected information gain for any given un
 
 \subsubsection{Evaluating the Mutual Information through sampling}
 Without using any assumptions about the nature of our model or data, we can utilize Monte Carlo sampling to optain an accurate estimate on the expectations in equation \ref{eq:mi}.
-For $N$ samples of $\theta$ and $M$ samples of $\B{y}$ this thus looks like
+For $N$ samples of $\theta \sim p(\theta)$ and $M$ samples of $\B{y} \sim p(\B{y} | \theta, \B{d})$ this thus looks like
 \begin{equation}
   I(\B{d}) \approx \frac{1}{NM}\sum_{i=0}^N\sum_{j=0}^M(\log (p(\theta_i | \B{y}_j, \B{d})) - \log(p(\theta_i)))
 \end{equation}
 Picking samples of $\B{y}$ nescessitates that we can simulate the experiment however.
-Instead, we will use the reparamerization trick to sample M samples of $\B{z}\in \mathcal{N}(0, \sigma^2_\B{y})$
-and then use equation \ref{eq:likelihood-generating} to get samples of $\B{y}$ by
+Instead, we will use the reparamerization trick to sample M samples of $\B{z}\in \mathcal{N}(0, 1)$ such that
 \begin{equation}
-  \B{y}_{ij} = \B{d}\theta_i + \B{z}_j
+  \B{y}_{ij} = \mu_{\B{y}| \theta, \B{d}} + A_{\B{y}| \theta, \B{d}}\B{z}_j
 \end{equation}
+
+where $A_\B{y}$ is a matrix such that $A_\B{y}A_\B{y}^T = \Sigma_\B{y}$. 
+From equation \ref{eq:likelihood} we have that $p(\B{y}| \theta, \B{d}) = \mathcal{N}(\B{y}; \B{d}\theta, \sigma^2_\B{y}I_n)$ so we must have $A_{\B{y}|\theta, \B{d}} = \sigma^2_{\B{y}}I_n$
 thus 
 \begin{equation}
-  I(\B{d}) \approx \frac{1}{NM}\sum_{i=0}^N\sum_{j=0}^M(\log (p(\theta_i | \B{d} \theta_i + \B{z}_j, \B{d})) - \log(p(\theta_i)))
+  I(\B{d}) \approx \frac{1}{NM}\sum_{i=0}^N\sum_{j=0}^M(\log (p(\theta_i | \B{d} \theta_i + \sigma^2_{\B{y}}\B{z}_j, \B{d})) - \log(p(\theta_i)))
 \end{equation}
 
 \subsubsection{Evaluating the Mutual Information through analytical solutions}
 It also happens that when we transform equation \ref{eq:mi} using sum of expectations, one can use the known solution to entropy of multivariate normal distributions:
-\begin{equation} \mathbb{E}_\B{y}[H_\textrm{grain}(\B{y}, \B{d})]  = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log(p(\theta | \B{y}, \B{d})) - \log(p(\theta))]]\end{equation}
+\begin{equation} I[(\B{y}, \B{d})]  = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log(p(\theta | \B{y}, \B{d}))]] - \mathbb{E}_\theta[\log(p(\theta))]\end{equation}
+$$= \mathbb{E}_{\B{y}}[\frac{1}{2}\ln \det (2\pi e \Sigma_{\theta|\B{y,d}})] - \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)$$
+It also happens to be that $\Sigma_{\theta|\B{y,d}}$ is independent from $\B{y}$, as we saw last week, thus we get.
+\begin{equation} I[\B{y}, \B{d}]  = \frac{1}{2}\ln \det (2\pi e \Sigma_{\theta|\B{y,d}}) - \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)\end{equation}
 
-\subsubsection{old part}
+\subsubsection{Stochastic Optimization}
+For the sampling approach here, and in the rest of the project, we will use a stochastic gradient descent algorithm to perform the optimization nescessary to solve \ref{eq:bayesian-optimal}.
+From some starting point $\B{d}_0$, iteratively update $\B{d}_i$ by
 \begin{equation}
-= \iint p(\mathbf{x,y})\ln (\frac{p(\mathbf{x,y})}{p(\mathbf{x})p(\mathbf{y})}) \ d\mathbf{x}\ d\mathbf{y}
+  \B{d}_i = \B{d}_{i-1} + \alpha \frac{1}{10^c + i \times 10^{-\beta}} \nabla_{\B{d}} I(\B{d}_{i-1})
 \end{equation}
-Mutual information is defined as
-$$I(\B{d}) = \int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})[\log p(\B{\theta}, \B{y}|\B{d}) - \log p(\B{y}|\B{d}) - \log p(\B{\theta})]d\B{y}d\B{\theta}$$
+where $\alpha, \beta, c \in \mathbb{R}$ are hyperparameters that ensures a slow converges to taylor the natural variance that occurs when using Monte Carlo methods.
 
-From last week, we assume that $p(\theta)$ (the prior in our linear model) is normally distributed with mean $\mu_\theta$ and covariance $\Sigma_\theta$.
-We can condition $p(\B{\theta}, \B{y}|\B{d})$ on $\B{\theta}$ and get
-$$p(\B{\theta}, \B{y}|\B{d}) = p(\B{\theta}|\B{y}, \B{d})p(\B{y}|\B{d})$$
-such that 
-% Here, $p(\B{\theta}|\B{y}, \B{d})$ is the posterior from last week, which we found also was normally distributed with
-% $$\mu_{\B{\theta}| \B{y},\B{d}}=\Sigma_\theta \B{d}^T(\sigma_\B{y} I_N + \B{d}\Sigma_\theta \B{d}^T)^{-1} \B{y}$$
-% $$\Sigma_{\B{\theta}| \B{y},\B{d}}=\Sigma_\theta  - \Sigma_\theta\B{d}^T(\sigma_\B{y} I_N + \B{d}\Sigma_\theta \B{d}^T)^{-1} \B{d}\Sigma_\theta$$
-% We can then condition the joint distribution $p(\B{\theta}, \B{y}|\B{d})$ on $\B{y}$ and get
-% $$p(\B{\theta}, \B{y}|\B{d}) = p(\B{y}|\B{\theta}, \B{d})p(\B{\theta}|\B{d})$$
-% Since we know that the parameters of the underlying model are independent on the datapoints that are measured from, we have that $p(\B{\theta} | \B{d})=p(\B{\theta})$. 
-% We also have that $p(\B{y}|\B{\theta}, \B{d})$ is the likelihood from last week, 
-% which by assumption is normally distributed with mean $\theta^T\B{d}$ and covariance $\sigma_\B{y}^2$.
-% Inserting our conditioning into $I(\B{d})$ gives us
-% $$I(\B{d})= \int_{\Theta}\int_{\B{Y}}p(\B{y}| \B{\theta},\B{d})p(\theta)[\log p(\B{\theta}| \B{y}, \B{d}) - \log p(\B{\theta})]d\B{y}d\B{\theta}$$
-\begin{align*}
-  I(\B{d}) &= \int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})[\log p(\B{\theta}| \B{y}, \B{d}) + \log p(\B{y}|\B{d}) - \log p(\B{y}|\B{d}) - \log p(\B{\theta})]d\B{y}d\B{\theta}\\
- &= \int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})[\log p(\B{\theta}| \B{y}, \B{d}) - \log p(\B{\theta})]d\B{y}d\B{\theta}\\
- & \mbox{Split integral over $\B{Y}$}\\
- &= \int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{y}- \int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta})d\B{y}d\B{\theta}\\
- & \mbox{Split joint distribution into conditional and marginal} \\
-&= \int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{y}- p(\theta)\log p(\B{\theta})\int_{\B{Y}}p(\B{y}|\B{\theta}, \B{d})d\B{y}d\B{\theta}\\
- & \mbox{Use that probability distributions integrate to 1} \\
-&= \int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{y}- p(\theta)\log p(\B{\theta})d\B{\theta}\\
-  & \mbox{Split integral over $\Theta$} \\
-&= \int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{y}d\B{\theta}- \int_\Theta p(\theta)\log p(\B{\theta})d\B{\theta}\\
-  & \mbox{Switch inner integral} \\
-&= \int_{\B{Y}}\int_{\B{\Theta}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{\theta}d\B{y}- \int_\Theta p(\theta)\log p(\B{\theta})d\B{\theta}\\
- & \mbox{Split joint distribution into conditional and marginal} \\
-&= \int_{\B{Y}}p(\B{y})\int_{\Theta}p(\B{\theta}|\B{y},\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{\theta}d\B{y}- \int_\Theta p(\theta)\log p(\B{\theta})d\B{\theta}\\
-& \mbox{Use known integral of entropy (defined as $H(f) = \int_x f(x)\log f(x) dx$) }\\
-& \mbox{for multivariate Gaussian distributions, as well as the fact that }\\
-& \mbox{the prior and posterior are multivariate Gaussian.} \\
-&= \int_{\B{Y}}p(\B{y})\frac{1}{2}\ln \det (2\pi e \Sigma_{\theta|\B{y,d}})d\B{y}- \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)\\
-& \mbox{Use that $\Sigma_{\theta | \B{y, d}}$ does not depend on $\B{y}$ (from last week)} \\
-& \mbox{and that probability distributions integrate to 1} \\
-&= \frac{1}{2}\ln \det (2\pi e \Sigma_{\theta|\B{y,d}})- \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)\\
-\end{align*}
-\subsubsection{An analytical approach}
-\subsection{Design}
-The implementation is pretty straight-forward this week, as we only need to implement $I(\textbf{d})$ and plug it in to any out-of-the-box optimizer, such as \texttt{scipy.optimize.minimize(method="BFGS")}.\\
-If one implements the optimization using \texttt{autograd.np}, the gradient can also be calculated easily, leading to a more efficient optimization approach.
+\subsection{Implementation}
+The mutual information metric can be implemented using the sampling method like so:
+\begin{minted}{python}
+def mutual_information(d):
+  N = 50 # amount of theta samples
+  M = 50 # amount of z samples
+  thetas = np.random.multivariate_normal(mean_prior, cov_prior, N)
+  zs = np.random.randn(M)
+  results = []
+  for theta in thetas:
+    ys = np.array([d @ theta + sigma_y * z for theta in thetas for z in zs])
+    for y in ys:
+      log_posterior = np.log(posterior_distribution(theta, d, y)) # using posterior_distribution from last week
+      log_prior = multivariate_normal.logpdf(theta, mean_prior, cov_prior)
+      results.append(log_posterior - log_prior)
+  return np.mean(results)
+\end{minted}
+
+And using the analytical solution like so:
+\begin{minted}{python}
+def mutual_information(d):
+  cov_posterior = get_cov_posterior(d) # using method from from last week
+  return 0.5 * np.log(np.linalg.det(2*np.pi*np.e*cov_posterior)) - 0.5 * np.log(np.linalg.det(2*np.pi*np.e*covariance_prior))
+\end{minted}
+
+Finding the gradient of these solutions can be done using \texttt{autograd.grad}. 
+An example of this can be seen in this implementation of the gradient descent algorithm:
+\begin{minted}{python}
+def optimize(f, d0, alpha, beta, c, iterations):
+  d = d0
+  g = grad(f)
+  for i in range(iterations):
+    d = d + alpha / (10**c + i * 10**(-beta)) * g(d)
+  return d
+\end{minted}
 \subsection{Results}
 \begin{figure}
   \centering
