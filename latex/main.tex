@@ -6,6 +6,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage[utf8]{inputenc}
 
+\usepackage[
+backend=biber,
+style=ieee,
+sorting=ynt,
+natbib=true
+]{biblatex}
+\addbibresource{bibliography.bib}
 \usepackage{algpseudocode}
 \usepackage{algorithm}
 
@@ -33,6 +40,19 @@
 \newcommand{\todo}[1]{\marginpar{\color{red}TODO:\color{black}\ #1}}
 \newcommand{\const}{\textrm{const}}
 
+\makeatletter % better block notation for matrices
+\renewcommand*\env@matrix[1][*\c@MaxMatrixCols c]{%
+  \hskip -\arraycolsep
+  \let\@ifnextchar\new@ifnextchar
+  \array{#1}}
+\makeatother
+\setminted{
+  frame=lines,
+  framesep=2mm,
+  baselinestretch=1.2,
+  linenos,
+  breaklines
+}
 \title{Bayesian Optimal Design - Weekly Report}
 \author{Rasmus Hag Løvstad, \texttt{pgq596}}
 \date{\today}
@@ -40,9 +60,12 @@
 \graphicspath{ {./assets} }
 \begin{document}
 \maketitle
-% \input{week1}
-% \input{week2}
-% \input{week3}
+\tableofcontents
+\input{week1}
+\input{week2}
+\input{week3}
 \input{week4}
+
+\printbibliography[heading=bibintoc]
 \end{document}
 
