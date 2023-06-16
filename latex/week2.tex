@@ -58,6 +58,7 @@ where $A_\B{y}$ is a matrix such that $A_\B{y}A_\B{y}^T = \Sigma_\B{y}$.
 From equation \ref{eq:likelihood} we have that $p(\B{y}| \theta, \B{d}) = \mathcal{N}(\B{y}; \B{d}\theta, \sigma^2_\B{y}I_n)$ so we must have $A_{\B{y}|\theta, \B{d}} = \sigma^2_{\B{y}}I_n$
 thus 
 \begin{equation}
+  \label{eq:mi-sampled}
   I(\B{d}) \approx \frac{1}{NM}\sum_{i=0}^N\sum_{j=0}^M(\log (p(\theta_i | \B{d} \theta_i + \sigma^2_{\B{y}}\B{z}_j, \B{d})) - \log(p(\theta_i)))
 \end{equation}
 
@@ -111,13 +112,22 @@ def optimize(f, d0, alpha, beta, c, iterations):
     d = d + alpha / (10**c + i * 10**(-beta)) * g(d)
   return d
 \end{minted}
+
 \subsection{Results}
+If we regard the problem with $\ell = 10$ datapoints and $d=2$ dimensions with a zero-prior mean and identity prior covariance, 
+we will data that is closer to the optimum to be spread out wider and more evenly in the parameter space.
+This can be seen if one regards equation \ref{eq:mi-sampled}. 
+If $\B{d}$ is picked such that $\B{d}\theta_i$ has a high probability of being a small number, then
+$\B{d}\theta_i + \sigma^2_\B{y}\B{z}_j$ is going to get dominated by the noise term $\sigma^2_\B{y}\B{z}_j$.
+Thus, the log-posterior $\log p(\theta_i | \B{d}\thta_i + \sigma^2_\B{y}\B{z}_j, \B{d})$ will be smaller.
+If on the other hand, $\B{d}$ is picked such that $\B{d}\theta_i$ has a high probability of being a large number, then $\B{d}\theta_i$ is going to dominate the noise term
+and the posterior has a higher probability of being a large number.\\
+In figure \ref{fig:mi-2d}, we can see if start position of 11 datapoints are on top of eachother, all at $(0;0)$, they will swiftly move to a more spread out formation.
 \begin{figure}
   \centering
-  \includegraphics[width=0.8\textwidth]{week2/BFGS.png}
-  \caption{BFGS algorithm optimizing for the most mutual information. The contours represent the mutual information.}
-  \label{fig:BFGS}
+  \includegraphics[width=0.8\textwidth]{week2/mi-2d.png}
+  \caption{Points moving from their initial position at (0;0) to a more optimal, spread out position.}
+  \label{fig:mi-2d}
 \end{figure}
-Running the BFGS algorithm 5 times with random start points over $I(\B{d})$ with $\Sigma_\theta=\begin{bmatrix}7.9 & 3 \\ 4 & 5\end{bmatrix}$ gives the plot seen in Figure \ref{fig:BFGS}. The algorithm usually converges after about 10 steps or so.
-\subsection{Evaluation}
-As it can be seen in Figure \ref{fig:BFGS}, the algorithm has no problem finding the optimal design for maximizing the mutual information between the prior and the posterior.
+Thus we've seen how optimizing over the Mutual Information metric can help find solutions to the Bayesian Optimal Design problem.
+Now we will move on to exploring how to solve regression problems, even when analytical solutions are not available with the hopes of opening up our Mutual Information optimizer to all kinds of models.

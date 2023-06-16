@@ -1,8 +1,20 @@
 \section{Week 3}
 \subsection{Objective}
-The objective of this week is to learn about and implement variational inference for Bayesian linear regression. 
-Then we will study convergence rates and accuracy by playing around with different parameters.
+This week, we will study and implement the variational inference framework with the objective of
+estimating the posterior in a way that is indifferent to the type of regression performed.
+We are going to pose the problem as an optimization problem and then derive an objective function that we can optimize over.
+We will then try to implement it and perform some adjustments for efficiency and numerical stability.
+% The objective of this week is to learn about and implement variational inference for Bayesian linear regression. 
+% Then we will study convergence rates and accuracy by playing around with different parameters.
 \subsection{Theory}
+\subsubsection{Variational Inference and Variational Families}
+In week 1, we were able to calculate the exact posterior using the right assumption and conjugacy between the prior and likelihood.
+This turns out to be a rarity - in most cases, a closed form solution for the posterior is not readily available.
+A common approach to this problem is to approximate the posterior distribution, using a \textit{variational distribution} $q$ picked from a family of distributions 
+that we might imagine could approximate the posterior.
+By picking a suitable objective function, we can use optimization techniques to approximate the posterior.
+This is called \textit{variational inference}.
+\\
 The point of variational inference is to approximate the posterior distribution $p(\theta | \B{y}, \B{d})$ using optimization techniques.
 The space of which to optimize in is the parameter space for some distribution $q(\theta)$, which we aim to make as close to the posterior as possible by KL-divergence.
 For reference, we will recite the definition of our linear model:
