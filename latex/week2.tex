@@ -113,6 +113,18 @@ def optimize(f, d0, alpha, beta, c, iterations):
   return d
 \end{minted}
 
+\subsubsection{Optimizing over 2-d matrices}
+A small, but important note in these implementations is that $\B{d}$ is two-dimensional.
+To make computation of gradients and optimization much easier, whenever we are in the context of the optimization algorithm, we will regard $\B{d}$ and the gradient as vectors of the shape
+$$\B{d}_v = \begin{bmatrix}\B{d}_{1,1} \\ \vdots  \\ \B{d}_{1,d} \\ \B{d}_{2,1} \\ \vdots \\ \B{d}_{\ell, d} \end{bmatrix}$$
+Whenever we are in the context of Mutual information, we will regard $\B{d}$ as a matrix. The following helper functions can thus be used to flatten and reconstruct the matrices as needed:
+\begin{minted}{python}
+def encode_d(d): # matrix to vector
+    return d.flatten()
+def decode_d(encoded_d, dim=2): # vector to matrix
+    return encoded_d.reshape(int(len(encoded_d)/dim), dim)
+\end{minted}
+
 \subsection{Results}
 If we regard the problem with $\ell = 10$ datapoints and $d=2$ dimensions with a zero-prior mean and identity prior covariance, 
 we will data that is closer to the optimum to be spread out wider and more evenly in the parameter space.

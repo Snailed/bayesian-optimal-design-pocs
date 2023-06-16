@@ -13,111 +13,112 @@ This turns out to be a rarity - in most cases, a closed form solution for the po
 A common approach to this problem is to approximate the posterior distribution, using a \textit{variational distribution} $q$ picked from a family of distributions 
 that we might imagine could approximate the posterior.
 By picking a suitable objective function, we can use optimization techniques to approximate the posterior.
-This is called \textit{variational inference}.
-\\
-The point of variational inference is to approximate the posterior distribution $p(\theta | \B{y}, \B{d})$ using optimization techniques.
-The space of which to optimize in is the parameter space for some distribution $q(\theta)$, which we aim to make as close to the posterior as possible by KL-divergence.
-For reference, we will recite the definition of our linear model:
-$$\theta \sim \mathcal{N}(\B{\mu}, \B{\Sigma})$$
-$$\epsilon \sim \mathcal{N}(0, \sigma^2_\B{y})$$
-$$\B{y} | \B{d}, \theta \sim \theta^T \B{d} + \epsilon$$
-The optimization problem we wish to solve is defined like so:
-$$q^*(\theta) = \arg \min_{q(\theta) \in \mathcal{L}} \textsc{KL}(q(\theta) || p(\theta | \B{y}, \B{d}))$$
-Computing the KL-divergence is hard though, because it requires computing the evidence $p(\B{y}, \B{d})$\todo{show why}, so instead we try to optimize in regards to the expectation lower bound (ELBO):
-$$\textsc{ELBO}(q) = \mathbb{E}_{\theta'}[\log p(\theta', \B{d}, \B{y})] - \mathbb{E}_{\theta'}[\log q(\theta')]$$
-Let us pick $q(\theta')$ from the family of multivariate normal distributions. This is reasonable, since we expect the posterior to be normally distributed due to conjugacy between the prior and likelihood.\\
-It is possible to rewrite the ELBO into a shape that is easier to optimize:
-$$\textsc{ELBO}(q) = \mathbb{E}_{\theta'}[\log p(\theta', \B{d}, \B{y})] - \mathbb{E}_{\theta'}[\log q(\theta')]$$
-$$ = \mathbb{E}_{\theta'}[\log p(\B{y} | \theta', \B{d}) p(\theta' | \B{d})p(\B{d})] - \mathbb{E}_{\theta'}[\log q(\theta')]$$
-$$ = \mathbb{E}_{\theta'}[\log p(\B{y} | \theta', \B{d}) + \log p(\theta' | \B{d}) + \log p(\B{d})] - \mathbb{E}_{\theta'}[\log q(\theta')]$$
-$$ = \mathbb{E}_{\theta'}[\log p(\B{y} | \theta', \B{d})] + \mathbb{E}_{\theta'}[\log p(\theta' | \B{d})] + \mathbb{E}_{\theta'}[\log p(\B{d})] - \mathbb{E}_{\theta'}[\log q(\theta')]$$
-$$ = \mathbb{E}_{\theta'}[\log p(\B{y} | \theta', \B{d})] + \mathbb{E}_{\theta'}[\log p(\theta')] - \mathbb{E}_{\theta'}[\log q(\theta')] + \const$$
-$$ = \mathbb{E}_{\theta'}[\log p(\B{y} | \theta', \B{d})] - (-\mathbb{E}_{\theta'}[\log p(\theta')] + \mathbb{E}_{\theta'}[\log q(\theta')]) + \const$$
-$$ = \mathbb{E}_{\theta'}[\log p(\B{y} | \theta', \B{d})] - \mathbb{E}_{\theta'}[\log \frac{q(\theta')}{p(\theta')}] + \const$$
-$$ = \mathbb{E}_{\theta'}[\log p(\B{y} | \theta', \B{d})] - \textrm{KL}(q || p) + \const$$
-Since $q$ and $p$ are multivariate normal by assumption, we can use the closed-form solution for $\textrm{KL}(q || p)$. 
-Thus, we only need to worry about the first part of the expression, which is an integral over the likelihood.\\
-Now, we need to use the assumption about the multivariate normal distribution, that the covariance matrix must satisfy $\Sigma = AA^T$ for some matrix $A$ \todo{add this assumption to week 1}.
-This means that
-$$\theta \sim \mathcal{N}(\mu_\theta, A_\theta A_\theta^T)$$
-$$\theta = \mu_\theta + A_\theta z$$\todo{why? (see eq 25 from lecture notes)}
-where
-$$z \sim \mathcal{N}(0, 1)$$
-Thus we can rewrite our ELBO function as
-$$\textsc{ELBO}(q) = \mathbb{E}_{z}[\log p(\B{y} | \mu_\theta + A_\theta z, \B{d})] - \textrm{KL}(q || p) + \const$$
-thus the log-likelihood is independent of $\theta'$.\\
-Now consider the first expectation:
-$$\mathbb{E}_{z}[\log p(\B{y} | \mu_\theta + A_\theta z, \B{d})]$$
-$$=\int_{z}p(z) \log p(\B{y} | \mu_\theta + A_\theta z, \B{d})\ dz$$
-$$\approx \frac{1}{N}\sum_{i=1}^N p(z^{(i)})\log p(\B{y} | \mu_\theta + A_\theta z^{(i)}, \B{d})$$
-where $N \in \mathbb{Z}$ and $z_i \sim \mathcal{N}(0, 1)$.
-% \subsubsection{Questions for Oswin, May 15}
-% \begin{itemize}
-%   \item In the current form, I still need to calculate the log-likelihood $\log p(\B{y} | \mu_\theta + A_\theta z^{(i)}, \B{d})$. Since this depends on $\mu_\theta$ and $A_\theta$, when we optimize for $\mu_\theta$ and $A_\theta$\\
-%     we're going to calculate (by autograd)
-%     $$\nabla_{\mu_\theta, A_\theta} \frac{1}{N}\sum_{i=1}^N p(z^{(i)})\log p(\B{y} | \mu_\theta + A_\theta z^{(i)}, \B{d})$$
-%     $$= \frac{1}{N}\sum_{i=1}^N p(z^{(i)})\nabla_{\mu_\theta, A_\theta}\log p(\B{y} | \mu_\theta + A_\theta z^{(i)}, \B{d})$$
-%     From our assumption that the likelihood is normally distributed, we thus have that
-%     $$= \frac{1}{N}\sum_{i=1}^N p(\B{z}^{(i)})\nabla_{\mu_\theta, A_\theta}\log \mathcal{N}(\B{y} ; \mu_\theta + A_\theta \B{z}^{(i)}, \sigma^2_\B{y}I)$$
-%     (by lecture notes, page 31). Thus, we need to compute the gradient of the normal distribution, which Autograd do not support, even using \texttt{autograd.scipy.optimize}, due to passing Arrayboxes into the mean-parameter.
-% \end{itemize}
-% Now we can estimate the expectation by averaging over different values of the log-likelihood from samples of $z$.
+This is called \textit{variational inference}. Thus, our goal is to find a $q^*$ such that for any $\theta\in \Theta$, $q^*(\theta) \approx p(\theta | \B{y}, \B{d})$.
+\subsubsection{Deriving a suitable objective function}
+Without any futher assumptions about our variational distribution, an immediate idea could be to use the KL-divergence between $q$ and $p$ as an objective function:
+\begin{equation}\label{eq:kld}q^*(\theta) = \arg \min_{q} \textsc{KL}(q(\theta) || p(\theta | \B{y}, \B{d}))\end{equation}
+Calculating this requries us to calculate the posterior, which we would like to avoid since we are often not guaranteed to be able to compute the evidence term $\log(p(\B{y} | \B{d}))$ from equation \ref{eq:bayes-rule}.
+We can however rewrite the KL-divergence as follows \cite{blei17}:
+\begin{equation}\textsc{KL}(q(\theta)|| p(\theta| \B{y}, \B{d})) = \mathbb{E}_{q(\theta)}[\log q(\theta)] - \mathbb{E}_{q(\theta)}[\log p(\theta|\B{y}, \B{d})]\end{equation}
+and by conditioning
+\begin{equation}\label{eq:kld-2}= \mathbb{E}_{q(\theta)}[\log q(\theta)] - \mathbb{E}_{q(\theta)}[\log p(\theta, \B{y}| \B{d})] + \log p(\B{y}| \B{d})\end{equation}
+One can now notice that the last term is actually constant with regards to $q$.
+Thus, when we optimize, we can ignore it. The remaining terms form the negative \textit{evidence lower bound} (ELBO) \cite{blei17}:
+\begin{equation}\label{eq:elbo-1}\textsc{ELBO}(q)= \mathbb{E}_{q(\theta)}[\log p(\theta, \B{y}| \B{d})]-\mathbb{E}_{q(\theta)}[\log q(\theta)]\end{equation}
+Since the KLD consists of the negative ELBO and a constant, we can minimize the KLD by maximizing the ELBO. Thus, we can reformulate our objective:
+\begin{equation}\label{eq:elbo-objective}q^*(\theta) = \arg \max_{q} \textsc{ELBO}(q)\end{equation}
+We can derive equation \ref{eq:elbo-1} to a more easily computable term:
+\begin{equation}\label{eq:elbo-2}\textsc{ELBO}(q) = \mathbb{E}_{q(\theta)}[\log (p(\B{y}| \theta , \B{d})p(\theta | \B{d}))] - \mathbb{E}_{q(\theta)}[\log q(\theta)]\end{equation}
+\begin{equation}= \mathbb{E}_{q(\theta)}[\log p(\B{y}| \theta , \B{d})]+\mathbb{E}_{q(\theta)}[\log p(\theta | \B{d})] - \mathbb{E}_{q(\theta)}[\log q(\theta)]\end{equation}
+Using that $\theta$ is independent of $\B{d}$, we have
+\begin{equation}= \mathbb{E}_{q(\theta)}[\log p(\B{y}| \theta , \B{d})]-(-\mathbb{E}_{q(\theta)}[\log p(\theta)] + \mathbb{E}_{q(\theta)}[\log q(\theta)])\end{equation}
+\begin{equation}= \mathbb{E}_{q(\theta)}[\log p(\B{y}| \theta , \B{d})]-\mathbb{E}_{q(\theta)}[\log (\frac{q(\theta)}{p(\theta)})]\end{equation}
+Using the definition of the KLD:
+\begin{equation}\label{eq:elbo-3}= \mathbb{E}_{q(\theta)}[\log p(\B{y}| \theta , \B{d})]- \textsc{KL}(q || p)\end{equation} \todo{rewrite expectations as $\theta \sim q$}
+Thus, this variational inference problem can work for any posterior, as long as one can calculate the expectation of the likelihood, and the KL-divergence between the variational distribution and the prior.
+\subsubsection{The Linear Regression Case}
+Let us now look at how one can find a good variational family for the linear regression case.
+An easy guess would be to pick $q$ from a family of multivariate gaussian distributions, since we know from conjugacy between the prior and likelihood that the posterior must also be multivariate gaussian.
+Thus, one can expect $q$ to be able to estimate $p$ perfectly.\\
+This has the nice consequence of turning the KL-divergence into a closed form expression, since both $q$ and $p$ follow multivariate normal distributions.\todo{add reference to closed form expression}\\
+We do have a problem, however: The first expectation of \ref{eq:elbo-3} is an integral without a closed-form solution.
+Thus, we wish to approximate it using Monte Carlo integration. 
+To be able to sample $\theta$s from $q$, we will need to use the reparameterization trick:
+By property of the multivariate normal distribution, there must exist some matrix $\B{A}$ such that $\theta \sim \mathcal{N}(\mu, \B{A} \B{A}^T)$ \cite{krause22}
+and such that
+\begin{equation}\theta = \mu + \B{A}\B{z}, \quad \textrm{where}\ \B{z}\sim \mathcal{N}(0,I_d)\end{equation}
+Thus, we can simply sample N samples of $\B{z}$ and calculate $\theta$ from that. 
+This means that our ELBO estimate can be written as follows:
+\begin{equation}\textsc{ELBO}(q) \approx \frac{1}{N}\sum_{i=0}^N [\log p(\B{y} | \mu + \B{A}\B{z}^{(i)}, \B{d})] - \textsc{KL}(q || p)\end{equation}
+$\mu$ and $\B{A}$ are then the parameters of $q$ that we will try to find through optimization.
+% \subsubsection{Appendum: Using the ELBO as a proxy for the KL-divergence}
+% When going from equation \ref{eq:kld-2} to \ref{eq:elbo-1}, we saw how the $\textsc{ELBO}$ is defined as the negative KLD plus the log-evidence $\log p(\B{y}|\B{d})$.
+% The difference between the ELBO and the KLD is exactly this: the log-evidence.
+\subsection{Implementation}
+\subsubsection{Implementing the log-pdf of multivariate normal distribution}
+Optimizing over this ELBO objective function means calculating the gradient of it. 
+We will again use \textt{autograd.grad} to do this, which nescessitates implementing the log-pdf of the multivariate normal distribution by hand, 
+since the one supplied by \textt{autograd.scipy.stats} does not handle the case where the mean and covariance carries information about the computation graph.\\
+The log-pdf of the multivariate normal distribution is given by:
+\begin{equation}
+  \log \mathcal{N}(x; \mu, \Sigma) = -\frac{1}{2}(n\log(2\pi) + \log(\det(\Sigma)) + (x - \mu)^T\Sigma^{-1}(x - \mu))
+\end{equation}
 
-% \subsubsection{Main points from meeting}
-% \begin{itemize}
-%   \item Let us move away form Mean-field family - we can just pick $q(\theta)$ to be a multivariate normal distribution.
-%     We are going to optimize to find the location and covariance.
-%   \item It is possible to refactor the ELBO to an expression of the shape
-%     $$ELBO(q) = \mathbb{E}_\theta' [\log p(\B{y}| \B{\theta}', \B{d})]- \textsc{KL}(q||p)$$
-%     Since $q$ and $p$ are both multivariate normal distributions, we know the KLD is a closed-form solution.
-%   \item Use a reparameterization trick (?) of using the assumption $\Sigma = AA^T$ such that $\theta = \mu_\theta + Az$ where $z\sim \mathcal{N}(0, I)$ to change $\mathbb{E}_\theta'[\log p(\B{y}| \theta', \B{d})]$ to $\mathbb{E}_z[\log p(\B{y}| \mu_\theta + Az, \B{d})]$.\\
-%     Sample some amount of $z$'s, calculate the inner part of the expectation and average it (i.e. sample from the integral).
-%   \item We need to use Stochastic optimization and I probably need to implement that part myself.
-% \end{itemize}
-\subsection{Design}
-The implementation is heavily utilizes the \texttt{autograd} library, which automatically calculates the gradient of the ELBO.
-To do this, it was nescessary to manually implement the PDF for the likelihood, since the one provided by Autograd doesn't support optimizing over the mean of the distribution.\\
-Several measures were taken to ensure numerical stability in this implementation including using the log-sum-exp trick as well as using the logarithm of the determinant instead of the actual determinant.
-It is also nescessary to make sure that enough samples are drawn of $\B{z}$ to ensure our expectation over the log-likelihood is accurate enough. 100 samples were used in this implementation.
-Another issue that arises is that sometime the log-likelihood becomes a very small negative number (often denoted as $-\infty$ by Numpy). This happens when a sample $z$ is picked such that the log-likelihood $p(\B{y}| \mu_\theta + A_\theta z^(i), \B{d})$ becomes very close to zero.
-This was solved by simply rejecting any sample that results in such a log-likelihood.
-
-Another problem that arises is overflows when the amount of datapoints become larger.
-To handle this, it first of all makes sense to work directly with the log of the likelihood instead of first calculating the likelihood and then taking the log of it.
-$$-\frac{1}{2}(n \log(2\pi) + \log(\det(\Sigma)) + (x-\mu)^T \Sigma^{-1}(x-\mu))$$ \todo{Why is logpdf true? prove in theory}
-This also means that we don't need to apply the log-sum-exp trick, since we are working directly with logarithms.
-A disadvantage with this method is first of all that we can't guarantee that the covariance has an inverse, and secondly that computing the inverse of large matrices is very inefficient.
-To solve the first issue, we can try regularize the covariance matrix by adding a small constant to the diagonal.
-The second could potentially be solved by using some sort of approximation like Cholesky decomposition, but this was not regarded for now.
-The stop condition for the optimization is decided by the default gradient tolerance of the scipy-implementation, 
-but in practice the optimization is stopped when the precision of the gradient is lost due to the stocastic nature of the objective function.
-This typically happens when trying to take small steps around the minimum, but as can be seen in Figure ... the precision is increased when the amount of datapoints is increased.
-\subsection{Results}\todo{Make subplots}
+\subsubsection{Main implementation}
+The main work of the algorithm is in calculating the ELBO. This can then be plugged into the same optimizer as in week 2.
+The ELBO can be implemented as follows in Python:
+\begin{minted}{python}
+def ELBO(d, y, mean, A): # optimizing for mean, A
+  zs = np.random.normal(size=(N, len(mean))) # N samples of size d
+  likelihood_samples = []
+  for z in zs:
+    theta = mean + A @ z
+    likelihood_samples.append(log_likelihood(y, theta, d))
+  return 1/N * np.sum(likelihood_samples, axis=0) - KLD(mean, A, prior_mean, prior_A)
+\end{minted}
+where the log-likelihood is implemented after equation \ref{eq:likelihood}:
+\begin{minted}{python}
+def log_likelihood(y, theta, d):
+  return log_pdf(y, theta @ d, noise * np.eye(len(theta)))
+\end{minted}
+\subsubsection{Optimizing over a mean and a matrix}
+Like in week 2, it is not trivial to optimize over both a mean and a matrix. Thus, we will encode $\mu$ and $\B{A}$ as a vector $\B{v}$ of the shape
+$$\B{v}=\begin{bmatrix}\mu_0 \\ \vdots \\ \mu_d \\ \B{A}_{1,1} \\ \vdots \\ \B{A}_{1,d} \\ \B{A}_{2,1} \\ \vdots \\ \B{A}_{d, d}\end{bmatrix}$$
+whenever we need to take the gradient or regard them in the context of the optimizer.
+The following help functions can help encode and decode $\mu$ and $\B{A}$:
+\begin{minted}{python}
+def encode_q_params(q_params): # mean, A to vector
+    mean, A = q_params
+    return np.array(list(mean) + list(A.flatten()))
+def decode_q_params(encoded_q, dim = 3): # vector to mean, A
+    shape = len(encoded_q)
+    A_shape = (int(np.sqrt(shape - dim)), int(np.sqrt(shape - dim)))
+    mean = encoded_q[0:dim]
+    A = encoded_q[dim:shape].reshape(A_shape)
+    return mean, A
+\end{minted}
+\subsection{Results}
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{week3/ellipses.png}
-  \caption{Optimization over the ELBO for 50 datapoints}
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\textwidth]{week3/mu-walk-1.png}
+  \end{subfigure}
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\textwidth]{week3/mu-walk-2.png}
+  \end{subfigure}
+  \label{fig:mu-walk}
+  \caption{Change in mean of $q$ after 500 iterations of the algorithm with $N$ = 10, $\ell = 100$.}
 \end{figure}
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{week3/ellipses-100.png}
-  \caption{Optimization over the ELBO for 100 datapoints}
+  \includegraphics[width=0.5\textwidth]{week3/elbo-per-iter.png}
+  \label{fig:elbo}
+  \caption{ELBO after each iteration of the algorithm with $N$ = 10, $\ell = 100$.}
 \end{figure}
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{week3/ellipses-300.png}
-  \caption{Optimization over the ELBO for 300 datapoints}
-\end{figure}
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{week3/Distance to minimum-300.png}
-  \caption{Optimization over the ELBO for 300 datapoints}
-\end{figure}
-As one can see, the optimization converges quite close to the true weights when the amount of datapoints increases as expected.
-First, the algorithm quickly moves towards the prior, and then slowly moves towards the true minimum. 
-If the prior is close to the true minimum, one could expect that the algorithm would converge faster.
-It is also seen that the covariance of the parameters quickly become very small. \todo{Interpret this - what does that mean?}
+As one can see in figure \ref{fig:mu-walk}, the mean of $q$ confidently moves towards the analytical posterior (and true weights).
+It can also been seen in figure \ref{fig:elbo} that the ELBO converges after 200 or so iterations, indicating that we have indeed found an optimum.
 \subsection{Evaluation}
-The algorithm presented here seems to work - although it is not as efficient as the analytical solution, it represents a framework that could be more useful for other problems.
-From this we've also learned a bit about how we can expect the movement of the distribution - first towards the prior, then towards the minimum.
-It has also shown the importance of numerical stability as well as how we can use the reparameterization trick for efficient computation.
+The algorithm presented here works as expected, and functions as a possible replacement for the analytical posterior.
+We've been able to utilize the ELBO as a proxy for the KL-divergence and created a framework that can fitted to many different kind of regression problems, 
+as long as one can estimate the log-likelihood and compute the KL-divergence between the variational distribution and the prior.
+
