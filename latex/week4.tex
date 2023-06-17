@@ -5,6 +5,44 @@ leading to a general framework for Bayesian Optimal Design that scales to many d
 % The objective of this week is to integrate our Bayesian Optimal Design optimizer from week 2 with our linear regression variational inference optimizer from week 3.
 \subsection{Theory}
 \subsubsection{Finding the gradient of the Mutual Information}
+In week 2, we neatly assumed that \textt{autograd.grad} was able to find the gradient 
+of the mutual information with respect to $\B{d}$. 
+When one uses variational inference to compute the posterior, this becomes nontrivial, since one needs to differentiate through the parameters as a function of the design $\B{d}$ \cite{lorraine19}.
+We can see this from equation \ref{eq:mi}:
+\begin{equation}I(\B{d}) = \mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (p(\theta | \B{y}, \B{d})) - \log p(\theta)]]\end{equation}
+When using variational inference, this changes to
+\begin{equation}\label{eq:variational-mi}I(\B{d}) \approx \mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (q^*(\theta)) - \log p(\theta)]],\ \textrm{where}\ q^*(\theta) = \arg \max_q \textsc{ELBO}_{\B{d}, \B{y}}(q)\end{equation}
+From now on, we will explicitly denote what $\B{d}$ and $\B{y}$ the ELBO is taken with regards to.
+Taking the gradient of \eqref{eq:variational-mi} results in
+\begin{equation}\nabla_\B{d} I(\B{d}) = \nabla_\B{d}\mathbb{E}_{\B{y} \sim q^*}[\mathbb{E}_{\B{\theta}\sim q^*}[\log (q^*(\theta)) - \log p(\theta)]]\end{equation}
+$$ \approx \mathbb{E}_{\B{\epsilon}\sim q^*}[\mathbb{E}_{\B{z}\sim q^*}[\nabla_\B{d}\log (q^*_{\B{y}', \B{d}}(\theta'))]],$$
+$$\ \textrm{where}\ \B{y}' = \B{d}\theta' + \epsilon,\ \theta' = \mu_\theta + \B{A}_\theta\B{z},\ \epsilon \sim \mathcal{N}(0, \sigma^2_\B{y} I_N),\ \B{z} \sim \mathcal{N}(0, I_M)$$
+Using the chain rule gives us
+\begin{equation}
+  = \mathbb{E}_{\B{\epsilon}\sim q^*}[\mathbb{E}_{\B{z}\sim q^*}[\frac{1}{q^*_{\B{y}', \B{d}}(\theta')} + \nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta'))]],
+\end{equation}
+Thus we need to calculate $\nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta')$, or more specifically
+\begin{equation}
+\nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta') = \nabla_\B{d} \arg \max_q \textsc{ELBO}_{\B{d}, \B{y}'}(q)\Bigr\rvert_{\theta}
+\end{equation}
+If we let $\lambda$ be the parameters of $q$ encoded as a vector, we can regard $q^*$ as a function of $\B{d}$.
+Thus we can use the chain rule.
+\begin{equation}
+  \nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta') = \nabla_\lambda q^{\lambda}_{\B{y}', \B{d}}(\theta')\nabla_\B{d} \lambda^*_{\B{y}', \B{d}}
+\end{equation}
+The gradient, $\nabla_\lambda q^\lambda_{\B{y}',\B{d}}$, is simple to perform using automatical differentiation.
+The Jacobian of the variational parameters with regards to the design $\B{d}$, $\nabla_\B{d} \lambda^*_{\B{y}', \B{d}}$, needs very careful consideration. 
+We will approach this using the Implicit Function Theorem \cite{lorraine19}:
+\begin{theorem}
+  Let $f$ be a continuously differentiable function from $\mathbb{R}^n \times \mathbb{R}^m$ to $\mathbb{R}^m$.
+  Fix a point $(a, b)$ such that $f(a, b) = \B{0}$. 
+  If the Jacobian $J_b^{f}(a, b)$ is invertible, then there must exist an open set $U \subseteq \mathbb{R}^n$ containing $a$
+  such that there exists a continuously differentiable function $g: U \rightarrow \mathbb{R}^m$ such that $g(a) = b$ and $f(x, g(x)) = \B{0}$ for all $x \in U$.
+  Futhermore, the Jacobian of $g$ in $U$ is given by
+  $$$$
+\end{theorem}
+\subsection{old stuff}
+
 \textbf{This is a working draft and should be sectioned into a more readable format, as well as have made notation consistent}
 Let us first regard our mutual information objective function from week 2:
 
