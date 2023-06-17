@@ -49,7 +49,7 @@ and such that
 \begin{equation}\theta = \mu + \B{A}\B{z}, \quad \textrm{where}\ \B{z}\sim \mathcal{N}(0,I_d)\end{equation}
 Thus, we can simply sample N samples of $\B{z}$ and calculate $\theta$ from that. 
 This means that our ELBO estimate can be written as follows:
-\begin{equation}\textsc{ELBO}(q) \approx \frac{1}{N}\sum_{i=0}^N [\log p(\B{y} | \mu + \B{A}\B{z}^{(i)}, \B{d})] - \textsc{KL}(q || p)\end{equation}
+\begin{equation}\textsc{ELBO}(q) \approx \frac{1}{N}\sum_{i=0}^N [\log p(\B{y} | \mu + \B{A}\B{z}^{(i)}, \B{d})] - \textsc{KL}(q || p)\label{eq:final-elbo}\end{equation}
 $\mu$ and $\B{A}$ are then the parameters of $q$ that we will try to find through optimization.
 % \subsubsection{Appendum: Using the ELBO as a proxy for the KL-divergence}
 % When going from equation \ref{eq:kld-2} to \ref{eq:elbo-1}, we saw how the $\textsc{ELBO}$ is defined as the negative KLD plus the log-evidence $\log p(\B{y}|\B{d})$.

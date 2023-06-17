@@ -14,12 +14,13 @@ When using variational inference, this changes to
 \begin{equation}\label{eq:variational-mi}I(\B{d}) \approx \mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (q^*(\theta)) - \log p(\theta)]],\ \textrm{where}\ q^*(\theta) = \arg \max_q \textsc{ELBO}_{\B{d}, \B{y}}(q)\end{equation}
 From now on, we will explicitly denote what $\B{d}$ and $\B{y}$ the ELBO is taken with regards to.
 Taking the gradient of \eqref{eq:variational-mi} results in
-\begin{equation}\nabla_\B{d} I(\B{d}) = \nabla_\B{d}\mathbb{E}_{\B{y} \sim q^*}[\mathbb{E}_{\B{\theta}\sim q^*}[\log (q^*(\theta)) - \log p(\theta)]]\end{equation}
-$$ \approx \mathbb{E}_{\B{\epsilon}\sim q^*}[\mathbb{E}_{\B{z}\sim q^*}[\nabla_\B{d}\log (q^*_{\B{y}', \B{d}}(\theta'))]],$$
+\begin{equation}\nabla_\B{d} I(\B{d}) = \nabla_\B{d}\mathbb{E}_{\B{y} \sim q^*}[\mathbb{E}_{\B{\theta}\sim q^*}[\log (q^*(\theta)) - \log p(\theta)]]\label{eq:var-mi-reparam}\end{equation}
+$$ \approx \mathbb{E}_{\B{\epsilon}}[\mathbb{E}_{\B{z}}[\nabla_\B{d}\log (q^*_{\B{y}', \B{d}}(\theta'))]],$$
 $$\ \textrm{where}\ \B{y}' = \B{d}\theta' + \epsilon,\ \theta' = \mu_\theta + \B{A}_\theta\B{z},\ \epsilon \sim \mathcal{N}(0, \sigma^2_\B{y} I_N),\ \B{z} \sim \mathcal{N}(0, I_M)$$
 Using the chain rule gives us
 \begin{equation}
-  = \mathbb{E}_{\B{\epsilon}\sim q^*}[\mathbb{E}_{\B{z}\sim q^*}[\frac{1}{q^*_{\B{y}', \B{d}}(\theta')} + \nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta'))]],
+  = \mathbb{E}_{\B{\epsilon}}[\mathbb{E}_{\B{z}}[\frac{1}{q^*_{\B{y}', \B{d}}(\theta')} \times \nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta'))]],
+  \label{eq:variational-mi-2}
 \end{equation}
 Thus we need to calculate $\nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta')$, or more specifically
 \begin{equation}
@@ -28,19 +29,47 @@ Thus we need to calculate $\nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta')$, or more s
 If we let $\lambda$ be the parameters of $q$ encoded as a vector, we can regard $q^*$ as a function of $\B{d}$.
 Thus we can use the chain rule.
 \begin{equation}
-  \nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta') = \nabla_\lambda q^{\lambda}_{\B{y}', \B{d}}(\theta')\nabla_\B{d} \lambda^*_{\B{y}', \B{d}}
+  \nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta') = \nabla_\lambda q^{\lambda}_{\B{y}', \B{d}}(\theta')\underbrace{\nabla_\B{d} \arg \max_\lambda \textsc{ELBO}_{\B{d}, \B{y}'}(q^\lambda)}_{\textrm{Jacobian}}
 \end{equation}
 The gradient, $\nabla_\lambda q^\lambda_{\B{y}',\B{d}}$, is simple to perform using automatical differentiation.
-The Jacobian of the variational parameters with regards to the design $\B{d}$, $\nabla_\B{d} \lambda^*_{\B{y}', \B{d}}$, needs very careful consideration. 
+The Jacobian of the variational parameters with regards to the design $\B{d}$, needs very careful consideration. 
 We will approach this using the Implicit Function Theorem \cite{lorraine19}:
 \begin{theorem}
   Let $f$ be a continuously differentiable function from $\mathbb{R}^n \times \mathbb{R}^m$ to $\mathbb{R}^m$.
   Fix a point $(a, b)$ such that $f(a, b) = \B{0}$. 
   If the Jacobian $J_b^{f}(a, b)$ is invertible, then there must exist an open set $U \subseteq \mathbb{R}^n$ containing $a$
   such that there exists a continuously differentiable function $g: U \rightarrow \mathbb{R}^m$ such that $g(a) = b$ and $f(x, g(x)) = \B{0}$ for all $x \in U$.
-  Futhermore, the Jacobian of $g$ in $U$ is given by
-  $$$$
+  Futhermore,
+  $$\nabla_{x}g(x) = -[J_y^f(x, g(x))]^{-1}J_{x}^{f}(x, g(x))$$
+  \label{thm:ift}
 \end{theorem}
+We will now adapt Theorem \ref{thm:ift} to our problem. 
+From now on, every mention of ELBO is with regards to $\B{y} = \theta \B{d} + \epsilon$ from \eqref{eq:var-mi-reparam} .
+Let $x=\B{d}$, $y=\lambda$, $g(\B{d}) = \arg \max_{\lambda} \textsc{ELBO}_{\B{d}}(q^{\lambda})$, $f(\B{d}, \lambda) = \nabla_{\lambda}\textsc{ELBO}_{\B{d}}(q^{\lambda})$.
+\\
+First, we need to fix a point $(\B{d}', \lambda')$ such that $\nabla_{\lambda}\textsc{ELBO}_{\B{d}'}(q^{\lambda'}) = 0$.
+If we take any $\B{d}'$, and pick $\lambda'$ to be any local optimum $\lambda' = g(\B{d})$, then the gradient must be $0$ at that point.
+If the hessian then is invertible, we must have:
+\begin{equation}
+  \nabla_{\B{d}} \arg \max_{\lambda} \textsc{ELBO}_{\B{d}}(q^{\lambda})\Bigr\rvert_{\theta}= 
+  -[\underbrace{\nabla^2_{\lambda} \textsc{ELBO}_{\B{d}}(q^*)}_{\textrm{variational hessian}}]^{-1}
+  \underbrace{\nabla_{\lambda}\nabla_{\B{d}}\textsc{ELBO}_{\B{d}}(q^*)}_{\textrm{variational mixed partials}}
+\end{equation}
+Computing both the variational hessian and the variational mixed partials should then be relatively simple using automatic differentiation.
+\subsubsection{Adapting to sampling}
+Again, we will approach calculating the expectations using Monte Carlo sampling. From \eqref{eq:variational-mi-2}, we will instead compute
+\begin{equation}\nabla_\B{d} I(\B{d}) \approx \sum_{i}^N \sum_{j}^M \frac{1}{q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})}\times \nabla_{\B{d}}q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})\end{equation}
+$$\ \textrm{where}\ \B{y}_{ij} = \B{d}\theta_j + \epsilon_i,\ \theta_j = \mu_\theta + \B{A}_\theta\B{z}_j,\ \epsilon_i \sim \mathcal{N}(0, \sigma^2_\B{y} I_\ell),\ \B{z} \sim \mathcal{N}(0, I_M)$$
+To try to keep numerically stable, we will use the log-sum-exp trick:
+\begin{equation}= \sum_{i}^N \sum_{j}^M \exp (\log \nabla_{\B{d}}q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})- \log q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})I_\ell) \label{eq:sample-mi-var}\end{equation}
+
+\subsection{Implementation}
+If, for every sample in \eqref{eq:sample-mi-var}, one needs to calculate a new $q^*$, then at least $N \times M$ $q$-optimizations are needed.
+Each $q$-optimization then requires at most $T$ iterations of the optimization algorithm and $L$ evaluations of the ELBO. 
+At last, the outer optimization algorithm requires at most $R$ iterations.
+Thus, the total number of evaluations of the inner part of \eqref{eq:final-elbo} is $R \times N \times M \times T \times L$, 
+which when perfomed as loops in Python is very slow. To help this, one can implement batching to reduce the amount of for-loop iterations, improving the computation time substantially.
+
 \subsection{old stuff}
 
 \textbf{This is a working draft and should be sectioned into a more readable format, as well as have made notation consistent}
