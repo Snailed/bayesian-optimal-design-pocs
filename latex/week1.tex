@@ -55,7 +55,8 @@ When modelling the prior information, one could choose to model the parameter di
   \label{eq:prior}
   p(\B{\theta}) = \mathcal{N}(\theta; \mu_{\theta}, \Sigma_\theta)
 \end{equation}
-where $\mu_\theta$, $\Sigma_\theta$ are chosen by the model designer.\\
+where $\mu_\theta$, $\Sigma_\theta$ are chosen by the model designer. 
+For linear regression, it is common to assume that $\mu_\theta = 0$ \cite{krause22}, which we will do as well. \\
 The last term of equation \ref{eq:bayes-rule} is the marginal distribution $p(\B{y})$, which is the probability of observing the target values $\B{y}$ without any additional information. 
 This term is difficult to make any reasonable assumptions about, and can thus hard to compute in practice.
 Lukily, it mostly acts as a normalization term that makes sure that the posterior distribution integrates to 1, so it can for many use cases be safely ignored.
@@ -187,10 +188,6 @@ Another solution is to define a distribution called the \textit{posterior predic
 Integrals like these are usually solved by sampling - examples of this will be seen later. For now, we can use Lemma \ref{lemma:block-joint} to get
 \begin{equation}p(\B{y}_{\textrm{new}} | \B{d}_{\textrm{new}}, \B{d}, \B{y}) = \mathcal{N}(\B{y}_\textrm{new}; \B{d}_\textrm{new}^T\mu_{\theta|\B{y}, \B{d}}, \sigma^2_\B{y} + \B{d}_\textrm{new}^T\Sigma_{\theta | \B{y}, \B{d}}\B{d}_\textrm{new})\end{equation}
 Having the posterior predictive allows us to both sample a $\B{y}$ for a given $\B{d}$, choose the $\B{y}$ that maximises the distribution, and to give us some measure of the inherent uncertancy in the model \cite{krause22}.
-\subsubsection{Linear regression being invariant to translation}
-A relevant side-note worth exploring is the effect of the choice of prior mean $\mu_\theta$ on the posterior mean $\mu_{\theta | \B{y}, \B{d}}$.
-
-\todo{Finish this section with information from Oswin - and edit posterior predictive if needed}
 
 \subsection{Implementation}
 Implementing a Bayesian linear regression model is fairly simple.
@@ -202,72 +199,41 @@ Then we can compute $\B{y}$ as in equation \ref{eq:likelihood-generating}.
 From this, we can simply implement the posterior distribution as in equation \ref{eq:posterior-mean} and \ref{eq:posterior-cov}.
 In Python, this can be done as follows:
 \begin{minted}{python}
-def posterior_distribution(theta, d, y):
-    mu = cov_prior @ d.T @ np.linalg.inv(d @ cov_prior @ d.T + noise * np.eye(l)) @ y
+def analytical_posterior_params(d, y, mu_prior=mu_prior, cov_prior=cov_prior): # Get parameters of pdf
+    mu = mu_prior + cov_prior @ d.T @ np.linalg.inv(d @ cov_prior @ d.T + noise * np.eye(l)) @ (y - d @ mu_prior)
     cov = cov_prior - cov_prior @ d.T @ np.linalg.inv(d @ cov_prior @ d.T + noise * np.eye(l)) @ d @ cov_prior
-    return stats.multivariate_normal.pdf(theta, mean=mu, cov=cov)
+    return mu, cov
+stats.multivariate_normal.pdf(theta, mean=mu, cov=cov)
 \end{minted}
 
 \subsection{Results}
-An example of how 20 samples of $\theta$ from the posterior changes with the size of the dataset can be seen in Figure \ref{fig:fixed-prior}.
-As one can see, the posterior becomes better at estimating the true $\theta$ as the number of data points increases,
-since the lines both become more similar and closer to the mean, as well as how they describe the data better. \\
-An example of how the posterior changes from the prior can be seen in figure \ref{fig:random-prior}, where 40 random prior means and covariances are plotted alongside their respective posterior.
-It can be seen that even when the priors are very different, the posterior usually ends up quite close to the true weight.
-An example of how the posterior predictive distribution changes is seen in figure \ref{fig:posterior-predictive}.
-As one can see, the distribution becomes less confident as the noise increases. \\
-Thus we've seen that the Bayesian linear regression model is able to learn the true weight parameters from data, and that it is able to do so even when the prior is very different from the true weight parameters. Now, we will move on to regarding the Bayesian Optimal Design problem.
+An example of how the posterior changes from the prior can be seen in figure \ref{fig:random-prior}, where 30 random prior means and covariances are plotted alongside their respective posterior.
+It can be seen that the quality of the posterior is very dependent on the amount of data, as well as the inherint noise in the data.
+It can also be seen that in a scenario with low amount of data and high noise, having a prior that is close to the true weights makes it more probable that ones posterior will be as well.
+
+An example of a posterior predictive distribution is seen in figure \ref{fig:posterior-predictive}, where one can see how the distribution is most confident in the area that one would expect the most points to be, with only a few outliers.
+Thus we've seen that the Bayesian linear regression model is able to learn the true weight parameters from data, and that it is able to do so even when the prior is very different from the true weight parameters. Now, we will move on to regarding the Bayesian Optimal Design problem.how the distribution is most confident in the area that one would expect the most points to be, with only a few outliers.
 \todo{Make plots nicer, add "true" line for reference, add legend}
 \begin{figure}[H]
-\begin{subfigure}{.5\textwidth}
+\begin{subfigure}{.33\textwidth}
   \centering
-  \includegraphics[width=0.8\textwidth]{assets/week1/fixed-prior-20-samples.png}
+  \includegraphics[width=1\textwidth]{assets/week1/random-priors-new-few.png}
 \end{subfigure}%
-\begin{subfigure}{.5\textwidth}
+\begin{subfigure}{.33\textwidth}
   \centering
-  \includegraphics[width=0.8\textwidth]{assets/week1/fixed-prior-40-samples.png}
-\end{subfigure}\\
-\begin{subfigure}{1\textwidth}
-  \centering
-  \includegraphics[width=0.4\textwidth]{assets/week1/fixed-prior-200-samples.png}
+  \includegraphics[width=1\textwidth]{assets/week1/random-priors-new-few-accurate.png}
 \end{subfigure}%
-\caption{The model trained on data sets with 20, 40 and 200 data points respectively with a fixed prior. The blue line is $\mu_{\theta|\mathcal{D}}$.}
-\label{fig:fixed-prior}
-\end{figure}
-
-\begin{figure}[H]
-\begin{subfigure}{1\textwidth}
+\begin{subfigure}{.33\textwidth}
   \centering
-  \includegraphics[width=0.7\textwidth]{assets/week1/random-priors.png}
-  \caption{Plot showing how the posterior mean changes compared to the prior mean.}
-\end{subfigure}\\
-\begin{subfigure}{.5\textwidth}
-  \centering
-  \includegraphics[width=0.8\textwidth]{assets/week1/random-priors-plot.png}
-  \caption{Prior mean samples}
-\end{subfigure}%
-\begin{subfigure}{.5\textwidth}
-  \centering
-  \includegraphics[width=0.8\textwidth]{assets/week1/random-priors-posteriors.png}
-  \caption{Posterior mean samples}
+  \includegraphics[width=1\textwidth]{assets/week1/random-priors-new-many-inaccurate.png}
 \end{subfigure}
-\caption{Priors vs Posteriors for 40 randomly sampled priors on the same data set. Note that the variance is due to random prior covariances.}
+\caption{30 different models trained on data sets with different sizes and noise levels. The more samples or lower noise, the closer to the true weights are the posteriors.}
 \label{fig:random-prior}
 \end{figure}
 
 \begin{figure}[H]
-\begin{subfigure}{1\textwidth}
-  \centering
-  \includegraphics[width=0.5\textwidth]{assets/week1/noise-1.png}
-\end{subfigure}\\
-\begin{subfigure}{.5\textwidth}
-  \centering
-  \includegraphics[width=0.8\textwidth]{assets/week1/noise-10.png}
-\end{subfigure}%
-\begin{subfigure}{.5\textwidth}
-  \centering
-  \includegraphics[width=0.8\textwidth]{assets/week1/noise-100.png}
-\end{subfigure}
-\caption{Posterior predictive for different noise levels}
+\centering
+\includegraphics[width=.7\textwidth]{assets/week1/noise-1000.png}
+\caption{Posterior predictive}
 \label{fig:posterior-predictive}
 \end{figure}
