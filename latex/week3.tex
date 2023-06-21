@@ -19,29 +19,29 @@ Without any futher assumptions about our variational distribution, an immediate 
 \begin{equation}\label{eq:kld}q^*(\theta) = \arg \min_{q} \textsc{KL}(q(\theta) || p(\theta | \B{y}, \B{d}))\end{equation}
 Calculating this requries us to calculate the posterior, which we would like to avoid since we are often not guaranteed to be able to compute the evidence term $\log(p(\B{y} | \B{d}))$ from equation \ref{eq:bayes-rule}.
 We can however rewrite the KL-divergence as follows \cite{blei17}:
-\begin{equation}\textsc{KL}(q(\theta)|| p(\theta| \B{y}, \B{d})) = \mathbb{E}_{q(\theta)}[\log q(\theta)] - \mathbb{E}_{q(\theta)}[\log p(\theta|\B{y}, \B{d})]\end{equation}
+\begin{equation}\textsc{KL}(q(\theta)|| p(\theta| \B{y}, \B{d})) = \mathbb{E}_{\theta \sim q}[\log q(\theta)] - \mathbb{E}_{\theta \sim q}[\log p(\theta|\B{y}, \B{d})]\end{equation}
 and by conditioning
-\begin{equation}\label{eq:kld-2}= \mathbb{E}_{q(\theta)}[\log q(\theta)] - \mathbb{E}_{q(\theta)}[\log p(\theta, \B{y}| \B{d})] + \log p(\B{y}| \B{d})\end{equation}
+\begin{equation}\label{eq:kld-2}= \mathbb{E}_{\theta \sim q}[\log q(\theta)] - \mathbb{E}_{\theta \sim q}[\log p(\theta, \B{y}| \B{d})] + \log p(\B{y}| \B{d})\end{equation}
 One can now notice that the last term is actually constant with regards to $q$.
 Thus, when we optimize, we can ignore it. The remaining terms form the negative \textit{evidence lower bound} (ELBO) \cite{blei17}:
-\begin{equation}\label{eq:elbo-1}\textsc{ELBO}(q)= \mathbb{E}_{q(\theta)}[\log p(\theta, \B{y}| \B{d})]-\mathbb{E}_{q(\theta)}[\log q(\theta)]\end{equation}
+\begin{equation}\label{eq:elbo-1}\textsc{ELBO}(q)= \mathbb{E}_{\theta \sim q}[\log p(\theta, \B{y}| \B{d})]-\mathbb{E}_{\theta \sim q}[\log q(\theta)]\end{equation}
 Since the KLD consists of the negative ELBO and a constant, we can minimize the KLD by maximizing the ELBO. Thus, we can reformulate our objective:
 \begin{equation}\label{eq:elbo-objective}q^*(\theta) = \arg \max_{q} \textsc{ELBO}(q)\end{equation}
 We can derive equation \ref{eq:elbo-1} to a more easily computable term:
-\begin{equation}\label{eq:elbo-2}\textsc{ELBO}(q) = \mathbb{E}_{q(\theta)}[\log (p(\B{y}| \theta , \B{d})p(\theta | \B{d}))] - \mathbb{E}_{q(\theta)}[\log q(\theta)]\end{equation}
-\begin{equation}= \mathbb{E}_{q(\theta)}[\log p(\B{y}| \theta , \B{d})]+\mathbb{E}_{q(\theta)}[\log p(\theta | \B{d})] - \mathbb{E}_{q(\theta)}[\log q(\theta)]\end{equation}
+\begin{equation}\label{eq:elbo-2}\textsc{ELBO}(q) = \mathbb{E}_{\theta \sim q}[\log (p(\B{y}| \theta , \B{d})p(\theta | \B{d}))] - \mathbb{E}_{\theta \sim q}[\log q(\theta)]\end{equation}
+\begin{equation}= \mathbb{E}_{\theta \sim q}[\log p(\B{y}| \theta , \B{d})]+\mathbb{E}_{\theta \sim q}[\log p(\theta | \B{d})] - \mathbb{E}_{\theta \sim q}[\log q(\theta)]\end{equation}
 Using that $\theta$ is independent of $\B{d}$, we have
-\begin{equation}= \mathbb{E}_{q(\theta)}[\log p(\B{y}| \theta , \B{d})]-(-\mathbb{E}_{q(\theta)}[\log p(\theta)] + \mathbb{E}_{q(\theta)}[\log q(\theta)])\end{equation}
-\begin{equation}= \mathbb{E}_{q(\theta)}[\log p(\B{y}| \theta , \B{d})]-\mathbb{E}_{q(\theta)}[\log (\frac{q(\theta)}{p(\theta)})]\end{equation}
+\begin{equation}= \mathbb{E}_{\theta \sim q}[\log p(\B{y}| \theta , \B{d})]-(-\mathbb{E}_{\theta \sim q}[\log p(\theta)] + \mathbb{E}_{\theta \sim q}[\log q(\theta)])\end{equation}
+\begin{equation}= \mathbb{E}_{\theta \sim q}[\log p(\B{y}| \theta , \B{d})]-\mathbb{E}_{\theta \sim q}[\log (\frac{q(\theta)}{p(\theta)})]\end{equation}
 Using the definition of the KLD:
-\begin{equation}\label{eq:elbo-3}= \mathbb{E}_{q(\theta)}[\log p(\B{y}| \theta , \B{d})]- \textsc{KL}(q || p)\end{equation} \todo{rewrite expectations as $\theta \sim q$}
+\begin{equation}\label{eq:elbo-3}= \mathbb{E}_{\theta \sim q}[\log p(\B{y}| \theta , \B{d})]- \textsc{KL}(q || p)\end{equation}
 Thus, this variational inference problem can work for any posterior, as long as one can calculate the expectation of the likelihood, and the KL-divergence between the variational distribution and the prior.
 \subsubsection{The Linear Regression Case}
 Let us now look at how one can find a good variational family for the linear regression case.
 An easy guess would be to pick $q$ from a family of multivariate gaussian distributions, since we know from conjugacy between the prior and likelihood that the posterior must also be multivariate gaussian.
 Thus, one can expect $q$ to be able to estimate $p$ perfectly.\\
 This has the nice consequence of turning the KL-divergence into a closed form expression, since both $q$ and $p$ follow multivariate normal distributions.\todo{add reference to closed form expression}\\
-We do have a problem, however: The first expectation of \ref{eq:elbo-3} is an integral without a closed-form solution.
+We do have a problem, however: The first expectation of \eqref{eq:elbo-3} is an integral without a closed-form solution.
 Thus, we wish to approximate it using Monte Carlo integration. 
 To be able to sample $\theta$s from $q$, we will need to use the reparameterization trick:
 By property of the multivariate normal distribution, there must exist some matrix $\B{A}$ such that $\theta \sim \mathcal{N}(\mu, \B{A} \B{A}^T)$ \cite{krause22}
@@ -55,15 +55,6 @@ $\mu$ and $\B{A}$ are then the parameters of $q$ that we will try to find throug
 % When going from equation \ref{eq:kld-2} to \ref{eq:elbo-1}, we saw how the $\textsc{ELBO}$ is defined as the negative KLD plus the log-evidence $\log p(\B{y}|\B{d})$.
 % The difference between the ELBO and the KLD is exactly this: the log-evidence.
 \subsection{Implementation}
-\subsubsection{Implementing the log-pdf of multivariate normal distribution}
-Optimizing over this ELBO objective function means calculating the gradient of it. 
-We will again use \textt{autograd.grad} to do this, which nescessitates implementing the log-pdf of the multivariate normal distribution by hand, 
-since the one supplied by \textt{autograd.scipy.stats} does not handle the case where the mean and covariance carries information about the computation graph.\\
-The log-pdf of the multivariate normal distribution is given by:
-\begin{equation}
-  \log \mathcal{N}(x; \mu, \Sigma) = -\frac{1}{2}(n\log(2\pi) + \log(\det(\Sigma)) + (x - \mu)^T\Sigma^{-1}(x - \mu))
-\end{equation}
-
 \subsubsection{Main implementation}
 The main work of the algorithm is in calculating the ELBO. This can then be plugged into the same optimizer as in week 2.
 The ELBO can be implemented as follows in Python:
@@ -80,6 +71,16 @@ where the log-likelihood is implemented after equation \ref{eq:likelihood}:
 \begin{minted}{python}
 def log_likelihood(y, theta, d):
   return log_pdf(y, theta @ d, noise * np.eye(len(theta)))
+\end{minted}
+and the KLD like so
+\begin{minted}{python}
+def KLD(mean_q, A_q, mean_p, A_p):
+    sigma_q = (A_q @ A_q.T)
+    sigma_p = (A_p @ A_p.T)
+    bar_sigma_q = np.linalg.norm(sigma_q)
+    bar_sigma_p = np.linalg.norm(sigma_p)
+    k = len(mean_q)
+    return 0.5 * (np.trace(np.linalg.inv(sigma_p) @ sigma_q) + (mean_p - mean_q).T @ np.linalg.inv(sigma_p) @ (mean_p - mean_q) - k + np.log(bar_sigma_p/bar_sigma_q))
 \end{minted}
 \subsubsection{Optimizing over a mean and a matrix}
 Like in week 2, it is not trivial to optimize over both a mean and a matrix. Thus, we will encode $\mu$ and $\B{A}$ as a vector $\B{v}$ of the shape
@@ -107,7 +108,7 @@ def decode_q_params(encoded_q, dim = 3): # vector to mean, A
     \includegraphics[width=\textwidth]{week3/mu-walk-2.png}
   \end{subfigure}
   \label{fig:mu-walk}
-  \caption{Change in mean of $q$ after 500 iterations of the algorithm with $N$ = 10, $\ell = 100$.}
+  \caption{Change in mean of $q$ after 200 iterations of the algorithm with $N$ = 10, $\ell = 100$.}
 \end{figure}
 \begin{figure}[H]
   \centering

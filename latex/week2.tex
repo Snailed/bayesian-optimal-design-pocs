@@ -117,6 +117,26 @@ def decode_d(encoded_d, dim=2): # vector to matrix
     return encoded_d.reshape(int(len(encoded_d)/dim), dim)
 \end{minted}
 
+\subsubsection{Implementing the log-pdf of multivariate normal distribution}
+Optimizing over this MI objective function means calculating the gradient of it. 
+We will again use \textt{autograd.grad} to do this, which nescessitates implementing the log-pdf of the multivariate normal distribution by hand, 
+since the one supplied by \textt{autograd.scipy.stats} does not handle the case where the mean and covariance carries information about the computation graph.\\
+The log-pdf of the multivariate normal distribution is given by:
+\begin{equation}
+  \log \mathcal{N}(x; \mu, \Sigma) = -\frac{1}{2}(n\log(2\pi) + \log(\det(\Sigma)) + (x - \mu)^T\Sigma^{-1}(x - \mu))
+\end{equation}
+It is important that this implementation is numerically stable and efficient, since it will be used a lot.
+The following implementation is used:
+\begin{minted}{python}
+def stable_multivariate_gaussian_logpdf(x, mu, cov):
+    n = cov.shape[-1]
+    x_mu = x - mu
+    _, log_det = np.linalg.slogdet(cov)
+    cov_inv = np.linalg.inv(cov)
+    prod = x_mu.T @ cov_inv @ x_mu
+    log_prob = -0.5 * (n * np.log(2 * np.pi) + log_det + prod)
+    return log_prob
+\end{minted}
 \subsection{Results}
 If we regard the problem with $\ell = 10$ datapoints and $d=2$ dimensions with a zero-prior mean and identity prior covariance, 
 we will data that is closer to the optimum to be spread out wider and more evenly in the parameter space.
