@@ -26,48 +26,47 @@ The gain of information must thus be
 If we instead regard equation \ref{eq:entropy-prior} and \ref{eq:entropy-posterior} as expectations we get
 \begin{equation} = \mathbb{E}_{\theta | \B{y}, \B{d}}[\log p(\theta | \B{y}, \B{d})] - \mathbb{E}_\theta [\log p(\theta )]\end{equation}
 Before we perform the experiment, we do not know what the outcome will be. Instead, we'll just regard the expected outcome by taking the expectation over $\B{y}$:
-\begin{equation} \label{eq:mi}\mathbb{E}_\B{y}[H_\textrm{gain}]  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \mathbb{E}_{\theta}[\log(p(\theta))]]\end{equation}\todo{To Oswin: In my notes, we put this under one single expectation. This is done with reparameterization, right?}
+\begin{equation} \label{eq:mi-bad}\mathbb{E}_\B{y}[H_\textrm{gain}]  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \mathbb{E}_{\theta}[\log(p(\theta))]]\end{equation}
 This expression is called the \textit{Mutual Information} between the prior and posterior, and will be denoted $I(\B{d})$.
-We can put a new interpretation upon this by expanding equation \ref{eq:mi} using Bayes' rule:
-\begin{equation} I(\B{d})  = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log(p(\B{y} | \B{\theta}, \B{d})) - \log(p(\B{y}|\B{d}))]]\end{equation} 
+It is widely seen in the litterature \cite{lindley56}, \cite{ryan15} that the two inner expectation is put under one, namely $\mathbb{E}_{\theta}$, giving a slightly different definition which is closer tied to the KL-divergence\footnote{This new definition is not entirely equivalent to the one purely based on information. I have included both definitions to show how Mutual Information is related to information theory, as shown in \citet{lindley56}}.
+\begin{equation} \label{eq:mi}I(\B{d})  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta} [\log(p(\theta | \B{y}, \B{d})) - \log(p(\theta))]]\end{equation}
+This can be seen by using Bayes' rule on the new definition to get
+
+% We can put a new interpretation upon this by expanding equation \ref{eq:mi} using Bayes' rule:
+\begin{equation} I(\B{d})  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta} [\log(p(\B{y} | \B{\theta}, \B{d})) - \log(p(\B{y}|\B{d}))]]\end{equation} 
 Then we can use that $\frac{p(\B{y}, \B{\theta}|\B{d})}{p(\theta)}=p(\B{y| \theta, \B{d}})$:
 \begin{equation} I(\B{d})  = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log\left(\frac{p(\B{y}, \B{\theta}|\B{d})}{p(\theta)}\right) - \log(p(\B{y}|\B{d}))]] = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log\left(\frac{p(\B{y}, \B{\theta}|\B{d})}{p(\theta)p(\B{y}|\B{d})}\right)]]\end{equation}
 $$ = \textsc{KL}(p(\B{y}, \theta | \B{d})|| p(\theta)p(\B{y}|\B{d}))$$
 Two random variables $X$ and $Y$ are said to be \textit{independent} if the product of their distributions is the same as their joint distribution i.e.
 \begin{equation}p(X,Y) = p(X)p(Y)\end{equation}
-Thus, Mutual Information measures how close the prior and the evidence \todo{check if indeed this is evidence}are to be independent. 
+Thus, this slightly altered Mutual Information metric measures how close the prior and the evidence \todo{check if indeed this is evidence}are to be independent. 
 If $\B{d}$ is picked such that the prior has a high probability of being able to predict $\B{y}|\B{d}$, then the mutual information is going to be close to 0. 
 If, on the contrary, $\B{d}$ is picked such that the prior has a low probability of being able to predict $\B{y}|\B{d}$, the mutual information is going to be large.
 Thus one could expect that an optimizer would prefer to pick a $\B{d}$ within an area where the prior is not very representative of the underlying generating function.
 Of course, in an experimental design context we do not have access to this underlying function as we might not be able to simulate experiments accurately. Instead, the expectation expressions in \ref{eq:mi}
 makes it such that we only regard the expected information gain for any given underlying function.
+For the rest of this project, we will regard the definition of mutual information as in \eqref{eq:mi}.
 
 \subsubsection{Evaluating the Mutual Information through sampling}
 Without using any assumptions about the nature of our model or data, we can utilize Monte Carlo sampling to optain an accurate estimate on the expectations in equation \ref{eq:mi}.
-For $N$ samples of $\theta \sim p(\theta)$ and $M$ samples of $\B{y} \sim p(\B{y} | \theta, \B{d})$ this thus looks like
+First we'll use that the prior is independent of $\B{y}$ to get
 \begin{equation}
-  I(\B{d}) \approx \frac{1}{NM}\sum_{i=0}^N\sum_{j=0}^M(\log (p(\theta_i | \B{y}_j, \B{d})) - \log(p(\theta_i)))
+  I(\B{d})  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \mathbb{E}_{\theta}[\log(p(\theta))]]
 \end{equation}
-Picking samples of $\B{y}$ nescessitates that we can simulate the experiment however.
-Instead, we will use the reparamerization trick to sample M samples of $\B{z}\in \mathcal{N}(0, 1)$ such that
 \begin{equation}
-  \B{y}_{ij} = \mu_{\B{y}| \theta, \B{d}} + A_{\B{y}| \theta, \B{d}}\B{z}_j
+  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - \mathbb{E}_{\theta}[\log(p(\theta))]
 \end{equation}
-
-where $A_\B{y}$ is a matrix such that $A_\B{y}A_\B{y}^T = \Sigma_\B{y}$. 
-From equation \ref{eq:likelihood} we have that $p(\B{y}| \theta, \B{d}) = \mathcal{N}(\B{y}; \B{d}\theta, \sigma^2_\B{y}I_n)$ so we must have $A_{\B{y}|\theta, \B{d}} = \sigma^2_{\B{y}}I_n$
-thus  \todo{make z different each iteration}
 \begin{equation}
-  \label{eq:mi-sampled}
-  I(\B{d}) \approx \frac{1}{NM}\sum_{i=0}^N\sum_{j=0}^M(\log (p(\theta_i | \B{d} \theta_i + \sigma^2_{\B{y}}\B{z}_j, \B{d})) - \log(p(\theta_i)))
+  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - H_\theta
 \end{equation}
-
-\subsubsection{Evaluating the Mutual Information through analytical solutions}
-It also happens that when we transform equation \ref{eq:mi} using sum of expectations, one can use the known solution to entropy of multivariate normal distributions:
-\begin{equation} I[(\B{y}, \B{d})]  = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log(p(\theta | \B{y}, \B{d}))]] - \mathbb{E}_\theta[\log(p(\theta))]\end{equation}
-$$= \mathbb{E}_{\B{y}}[\frac{1}{2}\ln \det (2\pi e \Sigma_{\theta|\B{y,d}})] - \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)$$
-It also happens to be that $\Sigma_{\theta|\B{y,d}}$ is independent from $\B{y}$, as we saw last week, thus we get.
-\begin{equation} I[\B{y}, \B{d}]  = \frac{1}{2}\ln \det (2\pi e \Sigma_{\theta|\B{y,d}}) - \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)\end{equation}
+Then we can use that entropy of multivariate gaussian distributions has a closed form solution:
+\begin{equation}
+  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)
+\end{equation}
+Then we can sample the nested expectations. For $N$ samples of $\theta \sim p(\theta)$ and $M$ samples of $\B{y} \sim p(\B{y} | \theta, \B{d})$ this looks like
+\begin{equation}
+  I(\B{d}) \approx \frac{1}{NM}\sum_{i=0}^N\sum_{j=0}^M(\log (p(\theta_i | \B{y}_j, \B{d}))) - \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)
+\end{equation}
 
 \subsubsection{Stochastic Optimization}
 For the sampling approach here, and in the rest of the project, we will use a stochastic gradient descent algorithm to perform the optimization nescessary to solve \ref{eq:bayesian-optimal}.
@@ -81,28 +80,21 @@ where $\alpha, \beta, c \in \mathbb{R}$ are hyperparameters that ensures a slow 
 The mutual information metric can be implemented using the sampling method like so:
 \begin{minted}{python}
 def mutual_information(d):
-  N = 50 # amount of theta samples
-  M = 50 # amount of z samples
-  thetas = np.random.multivariate_normal(mean_prior, cov_prior, N)
-  zs = np.random.randn(M)
-  results = []
-  for theta in thetas:
-    ys = np.array([d @ theta + sigma_y * z for theta in thetas for z in zs])
-    for y in ys:
-      log_posterior = np.log(posterior_distribution(theta, d, y)) # using posterior_distribution from last week
-      log_prior = multivariate_normal.logpdf(theta, mean_prior, cov_prior)
-      results.append(log_posterior - log_prior)
-  return np.mean(results)
+    l = len(d)
+    M = 2
+    N = 5
+    samples = []
+    thetas = np.random.multivariate_normal(mu_prior, cov_prior, size=N)
+    for theta in thetas:
+        ys = ((np.tile(augment_d(d), (M, 1, 1)) @ theta).T + (noise * np.eye(len(d))) @ np.random.randn(len(d), M)).T
+        for y in ys:
+            mu_post, cov_post = analytical_posterior_params(augment_d(d), y)
+            val = stable_multivariate_gaussian_logpdf(theta, mu_post, cov_post) - 0.5 * np.log(np.linalg.det(2*np.pi*np.e*cov_prior))
+            samples.append(val)
+    return 1/(N * M) * np.sum(samples)
 \end{minted}
 
-And using the analytical solution like so:
-\begin{minted}{python}
-def mutual_information(d):
-  cov_posterior = get_cov_posterior(d) # using method from from last week
-  return 0.5 * np.log(np.linalg.det(2*np.pi*np.e*cov_posterior)) - 0.5 * np.log(np.linalg.det(2*np.pi*np.e*covariance_prior))
-\end{minted}
-
-Finding the gradient of these solutions can be done using \texttt{autograd.grad}. 
+Finding the gradient can be done using \texttt{autograd.grad}. 
 An example of this can be seen in this implementation of the gradient descent algorithm:
 \begin{minted}{python}
 def optimize(f, d0, alpha, beta, c, iterations):
@@ -134,12 +126,39 @@ $\B{d}\theta_i + \sigma^2_\B{y}\B{z}_j$ is going to get dominated by the noise t
 Thus, the log-posterior $\log p(\theta_i | \B{d}\thta_i + \sigma^2_\B{y}\B{z}_j, \B{d})$ will be smaller.
 If on the other hand, $\B{d}$ is picked such that $\B{d}\theta_i$ has a high probability of being a large number, then $\B{d}\theta_i$ is going to dominate the noise term
 and the posterior has a higher probability of being a large number.\\
-In figure \ref{fig:mi-2d}, we can see if start position of 11 datapoints are on top of eachother, all at $(0;0)$, they will swiftly move to a more spread out formation.
+In figure \ref{fig:mi-2d}, we can see if start position of 10 datapoints are on top of eachother, all at $(0;0)$, they will swiftly move to a more spread out formation.\\
+If we choose a zero-mean prior with an identity covariance, the points will spread out instantly from the center. If we choose a non-zero mean and non-identity covariance, 
+the gradient seems to become more steep such that some of the points can move away quite fast.
+If we insert a regularization factor $\mathcal{L} = 10^{-2}\times |\B{d}|^2$, the points will diverge confidently from the start position until some point, where they will start to stutter and not move much more.
+
+\\
 \begin{figure}
+  \begin{subfigure}{.33\textwidth}
+    \includegraphics[width=0.8\textwidth]{week2/mi-2d-unit.png}
+  \end{subfigure}
+  \begin{subfigure}{.33\textwidth}
+    \includegraphics[width=0.8\textwidth]{week2/mi-2d-non-unit.png}
+  \end{subfigure}
+  \begin{subfigure}{.33\textwidth}
+    \includegraphics[width=0.8\textwidth]{week2/mi-2d-reg.png}
+  \end{subfigure}
   \centering
-  \includegraphics[width=0.8\textwidth]{week2/mi-2d.png}
-  \caption{Points moving from their initial position at (0;0) to a more optimal, spread out position.}
+  \caption{Points in $\B{d}$-space moving from their start position (blue) and increasingly away from it.}
   \label{fig:mi-2d}
+\end{figure}
+\begin{figure}
+  \begin{subfigure}{.33\textwidth}
+    \includegraphics[width=0.8\textwidth]{week2/mi-over-time-zero.png}
+  \end{subfigure}
+  \begin{subfigure}{.33\textwidth}
+    \includegraphics[width=0.8\textwidth]{week2/mi-over-time-non-zero.png}
+  \end{subfigure}
+  \begin{subfigure}{.33\textwidth}
+    \includegraphics[width=0.8\textwidth]{week2/mi-over-time-reg.png}
+  \end{subfigure}
+  \centering
+  \caption{Convergence of each of the plots from Figure \ref{fig:mi-2d}}
+  \label{fig:mi-over-time}
 \end{figure}
 Thus we've seen how optimizing over the Mutual Information metric can help find solutions to the Bayesian Optimal Design problem.
 Now we will move on to exploring how to solve regression problems, even when analytical solutions are not available with the hopes of opening up our Mutual Information optimizer to all kinds of models.
