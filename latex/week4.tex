@@ -9,12 +9,12 @@ In week 2, we neatly assumed that \textt{autograd.grad} was able to find the gra
 of the mutual information with respect to $\B{d}$. 
 When one uses variational inference to compute the posterior, this becomes nontrivial, since one needs to differentiate through the parameters as a function of the design $\B{d}$ \cite{lorraine19}.
 We can see this from equation \ref{eq:mi}:
-\begin{equation}I(\B{d}) = \mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (p(\theta | \B{y}, \B{d})) - \log p(\theta)]]\end{equation} \todo{Replace with reparamerization}
+\begin{equation}I(\B{d}) = \mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (p(\theta | \B{y}, \B{d})) - \log p(\theta)]]\end{equation}
 When using variational inference, this changes to
 \begin{equation}\label{eq:variational-mi}I(\B{d}) \approx \mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (q^*(\theta)) - \log p(\theta)]],\ \textrm{where}\ q^*(\theta) = \arg \max_q \textsc{ELBO}_{\B{d}, \B{y}}(q)\end{equation}
 From now on, we will explicitly denote what $\B{d}$ and $\B{y}$ the ELBO is taken with regards to.
-Taking the gradient of \eqref{eq:variational-mi} results in
-\begin{equation}\nabla_\B{d} I(\B{d}) = \nabla_\B{d}\mathbb{E}_{\B{y} \sim q^*}[\mathbb{E}_{\B{\theta}\sim q^*}[\log (q^*(\theta)) - \log p(\theta)]]\label{eq:var-mi-reparam}\end{equation}
+Taking the gradient of \eqref{eq:variational-mi} and using reparamerization results in
+\begin{equation}\nabla_\B{d} I(\B{d}) = \nabla_\B{d}\mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (q^*(\theta)) - \log p(\theta)]]\label{eq:var-mi-reparam}\end{equation}
 $$ \approx \mathbb{E}_{\B{\epsilon}}[\mathbb{E}_{\B{z}}[\nabla_\B{d}\log (q^*_{\B{y}', \B{d}}(\theta'))]],$$
 $$\ \textrm{where}\ \B{y}' = \B{d}\theta' + \epsilon,\ \theta' = \mu_\theta + \B{A}_\theta\B{z},\ \epsilon \sim \mathcal{N}(0, \sigma^2_\B{y} I_N),\ \B{z} \sim \mathcal{N}(0, I_M)$$
 Using the chain rule gives us
@@ -75,7 +75,9 @@ we can test each part of the implementation by comparing it to its analytical co
 For example, one can replace the variational approximation with the analytical posterior to see how the variational approximation change the convergence of the Mutual Information metric.
 One can futhermore compare this to the results from week 2, where we used automatic differentiation to compute the entire gradient of the Mutual Information metric.
 \subsection{Results}
-
+It was not possible within the scope of this project to get a fully working implementation of the combined Bayesian Optimal Design and variational inference algorithms.
+One of the main problems is that a lot of noise is introduced when we compute the gradient ourselves. 
+This can be seen from the following code snippet that produces the points in figure \ref{fig:mi-1-var}
 % \subsection{old stuff}
 
 % \textbf{This is a working draft and should be sectioned into a more readable format, as well as have made notation consistent}
