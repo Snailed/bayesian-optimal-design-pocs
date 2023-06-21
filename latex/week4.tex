@@ -9,7 +9,7 @@ In week 2, we neatly assumed that \textt{autograd.grad} was able to find the gra
 of the mutual information with respect to $\B{d}$. 
 When one uses variational inference to compute the posterior, this becomes nontrivial, since one needs to differentiate through the parameters as a function of the design $\B{d}$ \cite{lorraine19}.
 We can see this from equation \ref{eq:mi}:
-\begin{equation}I(\B{d}) = \mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (p(\theta | \B{y}, \B{d})) - \log p(\theta)]]\end{equation}
+\begin{equation}I(\B{d}) = \mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (p(\theta | \B{y}, \B{d})) - \log p(\theta)]]\end{equation} \todo{Replace with reparamerization}
 When using variational inference, this changes to
 \begin{equation}\label{eq:variational-mi}I(\B{d}) \approx \mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (q^*(\theta)) - \log p(\theta)]],\ \textrm{where}\ q^*(\theta) = \arg \max_q \textsc{ELBO}_{\B{d}, \B{y}}(q)\end{equation}
 From now on, we will explicitly denote what $\B{d}$ and $\B{y}$ the ELBO is taken with regards to.
@@ -54,6 +54,7 @@ If the hessian then is invertible, we must have:
   \nabla_{\B{d}} \arg \max_{\lambda} \textsc{ELBO}_{\B{d}}(q^{\lambda})\Bigr\rvert_{\theta}= 
   -[\underbrace{\nabla^2_{\lambda} \textsc{ELBO}_{\B{d}}(q^*)}_{\textrm{variational hessian}}]^{-1}
   \underbrace{\nabla_{\lambda}\nabla_{\B{d}}\textsc{ELBO}_{\B{d}}(q^*)}_{\textrm{variational mixed partials}}
+  \label{eq:variational-jacobian}
 \end{equation}
 Computing both the variational hessian and the variational mixed partials should then be relatively simple using automatic differentiation.
 \subsubsection{Adapting to sampling}
@@ -64,95 +65,100 @@ To try to keep numerically stable, we will use the log-sum-exp trick:
 \begin{equation}= \sum_{i}^N \sum_{j}^M \exp (\log \nabla_{\B{d}}q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})- \log q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})I_\ell) \label{eq:sample-mi-var}\end{equation}
 
 \subsection{Implementation}
-If, for every sample in \eqref{eq:sample-mi-var}, one needs to calculate a new $q^*$, then at least $N \times M$ $q$-optimizations are needed.
-Each $q$-optimization then requires at most $T$ iterations of the optimization algorithm and $L$ evaluations of the ELBO. 
-At last, the outer optimization algorithm requires at most $R$ iterations.
-Thus, the total number of evaluations of the inner part of \eqref{eq:final-elbo} is $R \times N \times M \times T \times L$, 
-which when perfomed as loops in Python is very slow. To help this, one can implement batching to reduce the amount of for-loop iterations, improving the computation time substantially.
-
-\subsection{old stuff}
-
-\textbf{This is a working draft and should be sectioned into a more readable format, as well as have made notation consistent}
-Let us first regard our mutual information objective function from week 2:
-
-$$MI(\B{d})= \int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{y}d\B{\theta}- \int_\Theta p(\theta)\log p(\B{\theta})d\B{\theta}$$
-Since we are optimizing, let us throw away the second term, since it is constant in terms of $\B{d}$:
-$$= \int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{y}d\B{\theta}$$
-To optimize the mutual information, we will need the derivative of it in terms of $\B{d}$:
-$$\frac{\partial }{\partial \B{d}}MI(\B{d})= \frac{\partial }{\partial \B{d}}\int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{y}d\B{\theta}$$
-$$= \int_{\Theta}\int_{\B{Y}}\frac{\partial }{\partial \B{d}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{y}d\B{\theta}$$
-Let us then use the product rule\todo{maybe change left derivative}
-$$= \int_{\Theta}\int_{\B{Y}}(\frac{\partial }{\partial \B{d}}p(\B{\theta}, \B{y}|\B{d}) \log p(\B{\theta}| \B{y}, \B{d}))
-+ (p(\B{\theta}, \B{y}|\B{d})\frac{\partial }{\partial \B{d}}\log p(\B{\theta}| \B{y}, \B{d}))
- d\B{y}d\B{\theta}$$
- Now, let us use the fact that $\frac{\partial }{\partial \B{d}}p(\B{\theta}, \B{y}|\B{d}) = p(\theta, \B{y}|\B{d})\frac{\partial }{\partial \B{d}}\log p(\theta |\B{y}, \B{d})$ \todo{prove this lemma}
-$$= \int_{\Theta}\int_{\B{Y}}p(\theta, \B{y}|\B{d})\frac{\partial }{\partial \B{d}}\log p(\theta |\B{y}, \B{d})\log p(\theta |\B{y}, \B{d})
-+ p(\B{\theta}, \B{y}|\B{d})\frac{\partial }{\partial \B{d}}\log p(\B{\theta}| \B{y}, \B{d})
- d\B{y}d\B{\theta}$$
-$$= \int_{\Theta}\int_{\B{Y}}p(\theta, \B{y}|\B{d})\frac{\partial }{\partial \B{d}}\log p(\theta |\B{y}, \B{d})(\log p(\theta |\B{y}, \B{d}) + 1)
- d\B{y}d\B{\theta}$$
-$$= \int_{\Theta}\int_{\B{Y}}p(\B{y}|\theta, \B{d})p(\theta)\frac{\partial }{\partial \B{d}}\log p(\theta |\B{y}, \B{d})(\log p(\theta |\B{y}, \B{d}) + 1)
- d\B{y}d\B{\theta}$$
- Solving this double integral can be hard. Let us consider it as an expectation of the form
- $$\mathbb{E}[f(\theta, \B{y})]=\int_{(\theta, \B{y})} p(\theta, \B{y})f(\theta, \B{y})d(\theta, \B{y})$$
- with $p(x)=p(\B{y}|\theta, \B{d})p(\theta)$ and $f(x)=\frac{\partial }{\partial \B{d}}\log p(\theta |\B{y}, \B{d})(\log p(\theta |\B{y}, \B{d}) + 1)$.
- We can then approximate this expectation by sampling by reducing the expectation to:
- $$\mathbb{E}[f(x)]\approx \frac{1}{N}\sum_{i=0}^Nf(\theta_i, \B{y}_i),\quad (\theta_i, \B{y}_i)\sim p(\theta_i, \B{y}_i)$$\todo{Figure out specific notation here}
- which leads to
-%  We can try to approximate the outer integral by sampling: picking a set of $\theta$'s and then averaging the result of these.
-% Each $\B{y}$ can then be seen as a function of $\B{d}$ and $\theta_i$ of the form $\B{y}=\theta_i^T\B{d} + \epsilon$ where $\epsilon \sim \mathcal{N}(0, \sigma^2_\B{y})$.
-% Thus, we can also approximate the inner integral by sampling $\epsilon$ from $\mathcal{N}(0, \sigma^2_\B{y})$. Thus we get the form\todo{remove two first terms}
- $$\frac{\partial}{\partial\B{d}}MI(\B{d})= \frac{1}{N}\sum_{i=1}^N\frac{\partial }{\partial \B{d}}\log p(\theta_i |\B{y}_i, \B{d})(\log p(\theta_i |\B{y}_i, \B{d}) + 1)
-$$
-where $(\theta_i, \B{y}_i)\sim p(\B{y}_i|\theta_i, \B{d})p(\theta_i)$.
-Sampling $\theta_i$ is easy from our prior, and we can do reparameterization to sample $\B{y}_{ij}=\theta_i^T \B{d} + z_j$ where $z_j\sim \mathcal{N}(0,\sigma^2_\B{y})$.
-
-\subsubsection{Finding the gradient of the posterior}
-\textbf{Notation}:\\
-$\vartheta$ = $\mu_\theta$ and $A_\theta$ for use in $q_{\vartheta}$\\
-$\B{y}_\B{d}$ = $\B{y}$ calculated from $\B{d}$.\\
-Now, let us consider the posterior $p(\theta_i|\B{y}, \B{d})$. This is the distribution that we try to approximate when performing variational inference. 
-Thus we can expect our variational distribution $q(\theta_i)$ to reasonably approximate it after our inference algorithm has run.
-We will denote the optimal parameters found $\vartheta^*(\B{d}, \B{y}_\B{d}) = \arg \max_\vartheta \textsc{ELBO}_{\B{d}, \B{y}(\B{d})}(q_\vartheta)$ such that $q_{\vartheta^*}(\theta_i)\approx p(\theta_i | \B{y}_\B{d}, \B{d})$.\\
-In our refactored expression for mutual information, we have a term containing $\frac{\partial }{\partial \B{d}}\log p(\theta_i |\B{y}_\B{d}, \B{d})$.
-
-% Thus, we can regard $\frac{\partial }{\partial \B{d}}\log p(\theta_i|\B{y}, \B{d})$ as
-% the derivative (in regards to $\B{d}$) of our variational distribution, evaluated at some point $\theta_i^*$(\B{y}, \B{d}) (which is the best possible configuration of parameters given $\B{y}$ and $\B{d}$).\\
-% Being that our 
-% Our inference algorithm takes $\B{y}$ and $\B{d}$ as input as well, which we will call $\B{w}$.
-% Evaluating $\frac{\partial }{\partial \B{d}}\log p(\theta_i|\B{y}, \B{d})$ can thus take the form:
-% $$\frac{\partial }{\partial \B{d}}\log p(\theta_i|\B{y}, \B{d}) = \frac{\partial }{\partial \B{d}}\log q(\theta_i)\Bigr\rvert_{\theta_i = \theta_i^*(\B{y}, \B{d})}$$
-$$\frac{\partial }{\partial \B{d}}\log p(\theta_i|\B{y}_\B{d}, \B{d}) \approx \frac{\partial }{\partial \B{d}}\log q_{\vartheta^*}(\theta_i)$$
-Since $\vartheta^*$ is a function of $\B{d}$, and $q^*$ is a function of $\theta^*$, then we can use the chain rule.
-$$=\frac{\partial}{\partial \vartheta^*}\log q_{\vartheta^*}(\theta_i)\frac{\partial }{\partial \B{d}}\vartheta^*(\B{y}_\B{d}, \B{d})$$
-
-\subsubsection{Using The Implicit Function Theorem for finding the indirect gradient}
-Let $\mathcal{D}$ be ($\B{d}$, $\B{y}$) encoded in some vector.\\
-If for some $(\mathcal{D}', \vartheta')$, $\frac{\partial }{\partial \vartheta} \textsc{ELBO}_{\mathcal{D}'} (q_\vartheta)\Bigr\rvert_{\mathcal{D}=\mathcal{D}', \vartheta=\vartheta'} = 0$
-and the Jacobian is invertible, then there exists an open set of datapoints $\mathcal{D} \in \mathcal{X} \times \mathcal{Y}$ \todo{add reference! very similar to litterature}
-such that there exists a function $\vartheta^* \colon \mathcal{X} \times \mathcal{Y} \rightarrow \Theta $ such that
-$$\vartheta^*(\mathcal{D}')= \vartheta' \textrm{ and }\forall \mathcal{D} \in \mathcal{X}\times \mathcal{Y}, \frac{\partial }{\partial \vartheta}\textsc{ELBO}_\mathcal{D} (q_\vartheta)\Bigr\rvert_{\mathcal{D}, \vartheta^*(\mathcal{D})} = 0$$
-Another consequence of this is that we can write
-$$\frac{\partial \vartheta^*}{\partial \B{d}}\Bigr\rvert_{\B{d}'} = \left(- \left[\frac{\partial^2 \textsc{ELBO}_{\B{d}, \B{y}_i}(q_\vartheta)}{\partial \vartheta \partial \vartheta^T}\right]^{-1}\times \frac{\partial^2 \textsc{ELBO}_{\B{d}, \B{y}_i}(q_\vartheta)}{\partial \vartheta \partial \B{d}^T}\right)\Bigr\rvert_{\B{d}', \vartheta^*(\B{d}', \B{y}'_i)}$$
-Where $\B{y}_i' = \theta^T\B{d}' + \B{z}$.
-Now we have the indirect gradient.
-% $$\frac{\partial \vartheta^*}{\partial \B{d}}\Bigr\rvert_{\B{d}'} = \left(- \left[\frac{\partial^2 \textsc{ELBO}_{\B{d}, \B{y}_i}(q_\vartheta)}{\partial \vartheta \partial \vartheta^T}\right]^{-1}\times \frac{\partial^2 \textsc{ELBO}_{\B{d}, \B{y}_i}(q_\vartheta)}{\partial \vartheta \partial \B{d}^T}\right)\Bigr\rvert_{\B{d}', \vartheta^*(\B{d}', \B{y}'_i)}$$
-% $$\frac{\partial }{\partial \B{d}}\vartheta^*(\B{y}_\B{d},\B{d}) =\frac{\partial \vartheta^*}{\partial \B{w}}\Bigr\rvert_{\B{w}=(\B{y}_d,\B{d})}= \left(- \left[\frac{\partial^2 \textsc{ELBO}_\B{w}(q_\vartheta)}{\partial \vartheta \partial \vartheta^T}\right]^{-1}\times \frac{\partial^2 \textsc{ELBO}_\B{w}(q_\vartheta)}{\partial \vartheta \partial \B{w}^T}\right)\Bigr\rvert_{\B{w}=(\B{y}, \B{d}), \vartheta^*(\B{y}_d, \B{d})}$$\todo{Find where evaluation is supposed to be}
-% These two parts are especially computable using tools like Autograd.
-% From our expression of the derivative of the log-posterior, we are interested in finding 
-% We model this by multiplying the change of $\log q(\theta_i)$ by $\theta_i$ with the change of $\theta_i$ by $\B{d}$.
-% $$=\frac{\partial}{\partial \theta_i}\log q(\theta_i)\Bigr\rvert_{\theta_i = \theta_i^*(\B{y}, \B{d})}\frac{\partial}{\partial \B{d}}\theta_i^*(\B{y},\B{d})$$
-% This gives us what the litterature calls the \textit{indirect gradient} \todo{check if true, add citation}.
-% Calculating the first part of this is rather simple through automatic differentiation.
-% The second part requires a bit more carefulness, and can be achieved through using the Implicit Function Theorem:
-% If for some $(\B{d}', \theta')$, $\frac{\partial }{\partial \theta} \textsc{ELBO} (q)\Bigr\rvert_{\B{d}', \theta'} = 0$
-% and the Jacobian is invertible, then there exists an open set of datapoints $\B{d} \in \mathcal{D}$ \todo{add reference! very similar to litterature}
-% such that there exists a function $\theta^* \colon \mathcal{D} \rightarrow \Theta $ such that
-% $$\theta^*(\B{d}')= \theta' \textrm{ and }\forall \B{d} \in \mathcal{D}, \frac{\partial }{\partial \theta}\textsc{ELBO} (q)\Bigr\rvert_{\B{d}, \theta^*(\B{d})} = 0$$
-% The way to interpret this is that if there exists some optimum, then it is possible to consistently construct the parameters such that we meet this optimum.
-% In the case of variational inference, we regard our optimization procedure as an approximation of $\theta^*$.
-% A consequence of the Implicit Function Theorem is also that we can write the partial derivative of $\theta^*$ like so:
-% $$\frac{\partial \theta^*}{\partial \B{d}} = - \left[\frac{\partial^2 \textsc{ELBO}(q)}{\partial \theta \partial \theta^T}\right]^{-1}\times \frac{\partial^2 \textsc{ELBO}(q)}{\partial \theta \partial \B{d}^T}$$
-\subsection{Design}
+\subsubsection{Reducing computation time}
+Since both the Mutual Information gradient and variational inference algorithm utilize sampling, a naive implementation could easily end up with many nested for-loops.
+To reduce this, batching techniques can be used to delegate computation to \texttt{numpy}, which can perform them in a lower level language. 
+A big bottleneck is the computation of the Hessian and Jacobian of \eqref{eq:variational-jacobian}, which can be sped up by using more modern automatic differentiation libraries than \textt{autograd}.
+\subsubsection{Correctness of implementation}
+Since we have the code and theoretical knowledge for each of the components that this implementation is composed of, 
+we can test each part of the implementation by comparing it to its analytical counterpart. 
+For example, one can replace the variational approximation with the analytical posterior to see how the variational approximation change the convergence of the Mutual Information metric.
+One can futhermore compare this to the results from week 2, where we used automatic differentiation to compute the entire gradient of the Mutual Information metric.
 \subsection{Results}
-\subsection{Evalution}
+
+% \subsection{old stuff}
+
+% \textbf{This is a working draft and should be sectioned into a more readable format, as well as have made notation consistent}
+% Let us first regard our mutual information objective function from week 2:
+
+% $$MI(\B{d})= \int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{y}d\B{\theta}- \int_\Theta p(\theta)\log p(\B{\theta})d\B{\theta}$$
+% Since we are optimizing, let us throw away the second term, since it is constant in terms of $\B{d}$:
+% $$= \int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{y}d\B{\theta}$$
+% To optimize the mutual information, we will need the derivative of it in terms of $\B{d}$:
+% $$\frac{\partial }{\partial \B{d}}MI(\B{d})= \frac{\partial }{\partial \B{d}}\int_{\Theta}\int_{\B{Y}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{y}d\B{\theta}$$
+% $$= \int_{\Theta}\int_{\B{Y}}\frac{\partial }{\partial \B{d}}p(\B{\theta}, \B{y}|\B{d})\log p(\B{\theta}| \B{y}, \B{d}) d\B{y}d\B{\theta}$$
+% Let us then use the product rule\todo{maybe change left derivative}
+% $$= \int_{\Theta}\int_{\B{Y}}(\frac{\partial }{\partial \B{d}}p(\B{\theta}, \B{y}|\B{d}) \log p(\B{\theta}| \B{y}, \B{d}))
+% + (p(\B{\theta}, \B{y}|\B{d})\frac{\partial }{\partial \B{d}}\log p(\B{\theta}| \B{y}, \B{d}))
+%  d\B{y}d\B{\theta}$$
+%  Now, let us use the fact that $\frac{\partial }{\partial \B{d}}p(\B{\theta}, \B{y}|\B{d}) = p(\theta, \B{y}|\B{d})\frac{\partial }{\partial \B{d}}\log p(\theta |\B{y}, \B{d})$ \todo{prove this lemma}
+% $$= \int_{\Theta}\int_{\B{Y}}p(\theta, \B{y}|\B{d})\frac{\partial }{\partial \B{d}}\log p(\theta |\B{y}, \B{d})\log p(\theta |\B{y}, \B{d})
+% + p(\B{\theta}, \B{y}|\B{d})\frac{\partial }{\partial \B{d}}\log p(\B{\theta}| \B{y}, \B{d})
+%  d\B{y}d\B{\theta}$$
+% $$= \int_{\Theta}\int_{\B{Y}}p(\theta, \B{y}|\B{d})\frac{\partial }{\partial \B{d}}\log p(\theta |\B{y}, \B{d})(\log p(\theta |\B{y}, \B{d}) + 1)
+%  d\B{y}d\B{\theta}$$
+% $$= \int_{\Theta}\int_{\B{Y}}p(\B{y}|\theta, \B{d})p(\theta)\frac{\partial }{\partial \B{d}}\log p(\theta |\B{y}, \B{d})(\log p(\theta |\B{y}, \B{d}) + 1)
+%  d\B{y}d\B{\theta}$$
+%  Solving this double integral can be hard. Let us consider it as an expectation of the form
+%  $$\mathbb{E}[f(\theta, \B{y})]=\int_{(\theta, \B{y})} p(\theta, \B{y})f(\theta, \B{y})d(\theta, \B{y})$$
+%  with $p(x)=p(\B{y}|\theta, \B{d})p(\theta)$ and $f(x)=\frac{\partial }{\partial \B{d}}\log p(\theta |\B{y}, \B{d})(\log p(\theta |\B{y}, \B{d}) + 1)$.
+%  We can then approximate this expectation by sampling by reducing the expectation to:
+%  $$\mathbb{E}[f(x)]\approx \frac{1}{N}\sum_{i=0}^Nf(\theta_i, \B{y}_i),\quad (\theta_i, \B{y}_i)\sim p(\theta_i, \B{y}_i)$$\todo{Figure out specific notation here}
+%  which leads to
+% %  We can try to approximate the outer integral by sampling: picking a set of $\theta$'s and then averaging the result of these.
+% % Each $\B{y}$ can then be seen as a function of $\B{d}$ and $\theta_i$ of the form $\B{y}=\theta_i^T\B{d} + \epsilon$ where $\epsilon \sim \mathcal{N}(0, \sigma^2_\B{y})$.
+% % Thus, we can also approximate the inner integral by sampling $\epsilon$ from $\mathcal{N}(0, \sigma^2_\B{y})$. Thus we get the form\todo{remove two first terms}
+%  $$\frac{\partial}{\partial\B{d}}MI(\B{d})= \frac{1}{N}\sum_{i=1}^N\frac{\partial }{\partial \B{d}}\log p(\theta_i |\B{y}_i, \B{d})(\log p(\theta_i |\B{y}_i, \B{d}) + 1)
+% $$
+% where $(\theta_i, \B{y}_i)\sim p(\B{y}_i|\theta_i, \B{d})p(\theta_i)$.
+% Sampling $\theta_i$ is easy from our prior, and we can do reparameterization to sample $\B{y}_{ij}=\theta_i^T \B{d} + z_j$ where $z_j\sim \mathcal{N}(0,\sigma^2_\B{y})$.
+
+% \subsubsection{Finding the gradient of the posterior}
+% \textbf{Notation}:\\
+% $\vartheta$ = $\mu_\theta$ and $A_\theta$ for use in $q_{\vartheta}$\\
+% $\B{y}_\B{d}$ = $\B{y}$ calculated from $\B{d}$.\\
+% Now, let us consider the posterior $p(\theta_i|\B{y}, \B{d})$. This is the distribution that we try to approximate when performing variational inference. 
+% Thus we can expect our variational distribution $q(\theta_i)$ to reasonably approximate it after our inference algorithm has run.
+% We will denote the optimal parameters found $\vartheta^*(\B{d}, \B{y}_\B{d}) = \arg \max_\vartheta \textsc{ELBO}_{\B{d}, \B{y}(\B{d})}(q_\vartheta)$ such that $q_{\vartheta^*}(\theta_i)\approx p(\theta_i | \B{y}_\B{d}, \B{d})$.\\
+% In our refactored expression for mutual information, we have a term containing $\frac{\partial }{\partial \B{d}}\log p(\theta_i |\B{y}_\B{d}, \B{d})$.
+
+% % Thus, we can regard $\frac{\partial }{\partial \B{d}}\log p(\theta_i|\B{y}, \B{d})$ as
+% % the derivative (in regards to $\B{d}$) of our variational distribution, evaluated at some point $\theta_i^*$(\B{y}, \B{d}) (which is the best possible configuration of parameters given $\B{y}$ and $\B{d}$).\\
+% % Being that our 
+% % Our inference algorithm takes $\B{y}$ and $\B{d}$ as input as well, which we will call $\B{w}$.
+% % Evaluating $\frac{\partial }{\partial \B{d}}\log p(\theta_i|\B{y}, \B{d})$ can thus take the form:
+% % $$\frac{\partial }{\partial \B{d}}\log p(\theta_i|\B{y}, \B{d}) = \frac{\partial }{\partial \B{d}}\log q(\theta_i)\Bigr\rvert_{\theta_i = \theta_i^*(\B{y}, \B{d})}$$
+% $$\frac{\partial }{\partial \B{d}}\log p(\theta_i|\B{y}_\B{d}, \B{d}) \approx \frac{\partial }{\partial \B{d}}\log q_{\vartheta^*}(\theta_i)$$
+% Since $\vartheta^*$ is a function of $\B{d}$, and $q^*$ is a function of $\theta^*$, then we can use the chain rule.
+% $$=\frac{\partial}{\partial \vartheta^*}\log q_{\vartheta^*}(\theta_i)\frac{\partial }{\partial \B{d}}\vartheta^*(\B{y}_\B{d}, \B{d})$$
+
+% \subsubsection{Using The Implicit Function Theorem for finding the indirect gradient}
+% Let $\mathcal{D}$ be ($\B{d}$, $\B{y}$) encoded in some vector.\\
+% If for some $(\mathcal{D}', \vartheta')$, $\frac{\partial }{\partial \vartheta} \textsc{ELBO}_{\mathcal{D}'} (q_\vartheta)\Bigr\rvert_{\mathcal{D}=\mathcal{D}', \vartheta=\vartheta'} = 0$
+% and the Jacobian is invertible, then there exists an open set of datapoints $\mathcal{D} \in \mathcal{X} \times \mathcal{Y}$ \todo{add reference! very similar to litterature}
+% such that there exists a function $\vartheta^* \colon \mathcal{X} \times \mathcal{Y} \rightarrow \Theta $ such that
+% $$\vartheta^*(\mathcal{D}')= \vartheta' \textrm{ and }\forall \mathcal{D} \in \mathcal{X}\times \mathcal{Y}, \frac{\partial }{\partial \vartheta}\textsc{ELBO}_\mathcal{D} (q_\vartheta)\Bigr\rvert_{\mathcal{D}, \vartheta^*(\mathcal{D})} = 0$$
+% Another consequence of this is that we can write
+% $$\frac{\partial \vartheta^*}{\partial \B{d}}\Bigr\rvert_{\B{d}'} = \left(- \left[\frac{\partial^2 \textsc{ELBO}_{\B{d}, \B{y}_i}(q_\vartheta)}{\partial \vartheta \partial \vartheta^T}\right]^{-1}\times \frac{\partial^2 \textsc{ELBO}_{\B{d}, \B{y}_i}(q_\vartheta)}{\partial \vartheta \partial \B{d}^T}\right)\Bigr\rvert_{\B{d}', \vartheta^*(\B{d}', \B{y}'_i)}$$
+% Where $\B{y}_i' = \theta^T\B{d}' + \B{z}$.
+% Now we have the indirect gradient.
+% % $$\frac{\partial \vartheta^*}{\partial \B{d}}\Bigr\rvert_{\B{d}'} = \left(- \left[\frac{\partial^2 \textsc{ELBO}_{\B{d}, \B{y}_i}(q_\vartheta)}{\partial \vartheta \partial \vartheta^T}\right]^{-1}\times \frac{\partial^2 \textsc{ELBO}_{\B{d}, \B{y}_i}(q_\vartheta)}{\partial \vartheta \partial \B{d}^T}\right)\Bigr\rvert_{\B{d}', \vartheta^*(\B{d}', \B{y}'_i)}$$
+% % $$\frac{\partial }{\partial \B{d}}\vartheta^*(\B{y}_\B{d},\B{d}) =\frac{\partial \vartheta^*}{\partial \B{w}}\Bigr\rvert_{\B{w}=(\B{y}_d,\B{d})}= \left(- \left[\frac{\partial^2 \textsc{ELBO}_\B{w}(q_\vartheta)}{\partial \vartheta \partial \vartheta^T}\right]^{-1}\times \frac{\partial^2 \textsc{ELBO}_\B{w}(q_\vartheta)}{\partial \vartheta \partial \B{w}^T}\right)\Bigr\rvert_{\B{w}=(\B{y}, \B{d}), \vartheta^*(\B{y}_d, \B{d})}$$\todo{Find where evaluation is supposed to be}
+% % These two parts are especially computable using tools like Autograd.
+% % From our expression of the derivative of the log-posterior, we are interested in finding 
+% % We model this by multiplying the change of $\log q(\theta_i)$ by $\theta_i$ with the change of $\theta_i$ by $\B{d}$.
+% % $$=\frac{\partial}{\partial \theta_i}\log q(\theta_i)\Bigr\rvert_{\theta_i = \theta_i^*(\B{y}, \B{d})}\frac{\partial}{\partial \B{d}}\theta_i^*(\B{y},\B{d})$$
+% % This gives us what the litterature calls the \textit{indirect gradient} \todo{check if true, add citation}.
+% % Calculating the first part of this is rather simple through automatic differentiation.
+% % The second part requires a bit more carefulness, and can be achieved through using the Implicit Function Theorem:
+% % If for some $(\B{d}', \theta')$, $\frac{\partial }{\partial \theta} \textsc{ELBO} (q)\Bigr\rvert_{\B{d}', \theta'} = 0$
+% % and the Jacobian is invertible, then there exists an open set of datapoints $\B{d} \in \mathcal{D}$ \todo{add reference! very similar to litterature}
+% % such that there exists a function $\theta^* \colon \mathcal{D} \rightarrow \Theta $ such that
+% % $$\theta^*(\B{d}')= \theta' \textrm{ and }\forall \B{d} \in \mathcal{D}, \frac{\partial }{\partial \theta}\textsc{ELBO} (q)\Bigr\rvert_{\B{d}, \theta^*(\B{d})} = 0$$
+% % The way to interpret this is that if there exists some optimum, then it is possible to consistently construct the parameters such that we meet this optimum.
+% % In the case of variational inference, we regard our optimization procedure as an approximation of $\theta^*$.
+% % A consequence of the Implicit Function Theorem is also that we can write the partial derivative of $\theta^*$ like so:
+% % $$\frac{\partial \theta^*}{\partial \B{d}} = - \left[\frac{\partial^2 \textsc{ELBO}(q)}{\partial \theta \partial \theta^T}\right]^{-1}\times \frac{\partial^2 \textsc{ELBO}(q)}{\partial \theta \partial \B{d}^T}$$
+% \subsection{Design}
+% \subsection{Results}
+% \subsection{Evalution}

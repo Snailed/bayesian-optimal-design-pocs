@@ -25,9 +25,9 @@ We might have some prior information on how the parameters $\B{\theta}$ are dist
 Given a likelihood, a marginal, and a prior, we can use Bayes' rule to find the \textit{posterior} distribution of $\B{\theta}$ given the data $\B{d}$ and target values $\B{y}$:
 \begin{equation}
   \label{eq:bayes-rule}
-  p(\B{\theta} | \B{d}, \B{y}) = \frac{p(\B{y} | \B{d}, \B{\theta})p(\B{\theta})}{p(\B{y})}
+  p(\B{\theta} | \B{d}, \B{y}) = \frac{p(\B{y} | \B{d}, \B{\theta})p(\B{\theta})}{p(\B{y| \B{d}})}
 \end{equation}
-What the posterior distribution $p(\B{\theta} | \B{d}, \B{y})$ models is the \textit{change of belief} from the prior model $p(\theta)$ given the \textit{evidence} $\B{y}$, $\B{d}$\cite{krause22}.
+What the posterior distribution $p(\B{\theta} | \B{d}, \B{y})$ models is the \textit{change of belief} from the prior model $p(\theta)$ given the \textit{evidence} $p(\B{y} | \B{d})$, $\B{d}$\cite{krause22}.
 It gives us a new best bet for the parameters $\B{\theta}$, which we can use to produce a better $\phi$ for equation $\ref{eq:general-regression}$.
 %we wish to find a set of model parameters $\theta \in \mathbb{R}^{\ell \times d}$ such that 
 \subsubsection{The linear regression problem}
@@ -138,7 +138,7 @@ Thus we can use Lemma \ref{lemma:block-joint} to get the joint distribution $p(\
     \begin{bmatrix}[c]
       \mu_\theta \\
       \hline
-      \B{d}\theta + \B{d}\mu_\theta
+      \B{d}\mu_\theta
     \end{bmatrix},
     \begin{bmatrix}[c | c]
       \Sigma_\B{\theta} & \Sigma_\B{\theta}\B{d}^T \\
@@ -157,21 +157,21 @@ To get the posterior distribution, we will need to use the conditioning Lemma \r
   =
   \mathcal{N}\left(
     \begin{bmatrix}[c]
-      \B{d}\theta + \B{d}\mu_\theta\\
+      \B{d}\mu_\theta\\
       \hline
       \mu_\theta
     \end{bmatrix},
     \begin{bmatrix}[c | c]
-      \B{d}\Sigma_\B{\theta}\B{d}^T + \sigma^2_\B{y} I_\ell &     \B{d}\Sigma_\B{\theta} \\
+      \B{d}\Sigma_\B{\theta}\B{d}^T + \sigma^2_\B{y} I_\ell &     \B{d}\Sigma_\B{\theta} \\ 
       \hline
       \Sigma_\B{\theta}\B{d}^T & \Sigma_\B{\theta}
     \end{bmatrix}
   \right)
-\end{equation}
+\end{equation} \todo{remove d theta}
 With the conditioning lemma, we get the posterior distribution $p(\theta | \B{y}, \B{d}) = \mathcal{N}(\theta; \mu_{\theta| \B{y}, \B{d}}, \Sigma_{\theta | \B{y}, \B{d}})$:
 \begin{equation}
   \label{eq:posterior-mean}
-  \mu_{\theta | \B{y}, \B{d}} = \mu_\theta + \Sigma_\theta \B{d}^T (\B{d} \Sigma_\theta \B{d}^T + \sigma^2_\B{y} I_\ell)^{-1}(\B{y} - \B{d}\theta + \B{d}\mu_\theta)
+  \mu_{\theta | \B{y}, \B{d}} = \mu_\theta + \Sigma_\theta \B{d}^T (\B{d} \Sigma_\theta \B{d}^T + \sigma^2_\B{y} I_\ell)^{-1}(\B{y} - \B{d}\mu_\theta)
 \end{equation}
 \begin{equation}
   \label{eq:posterior-cov}

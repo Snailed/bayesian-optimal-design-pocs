@@ -16,20 +16,20 @@ To find the optimal design, we want to find a maximizer $\B{d}^*$ defined as suc
 Where $I(\B{d})$ is the \textit{Mutual Information} between the prior and posterior when adjusted for data observed at $\B{d}$.\\
 \subsubsection{The Nature of the Mutual Information metric}
 The amount of information of an experiment is often defined as the negative differential entropy defined as such\cite{lindley56}:
-\begin{equation}H(X) = \int_{X}p(x)\log p(x)dx\end{equation}
+\begin{equation}H_x = \int_{X}p(x)\log p(x)dx\end{equation}
 Thus, the information known before $\B{y}$ is observed from $\B{d}$ is
-\begin{equation}\label{eq:entropy-prior}H_1 = \int_{\Theta}p(\theta)\log p(\theta)d\theta\end{equation}
+\begin{equation}\label{eq:entropy-prior}H_\theta = \int_{\Theta}p(\theta)\log p(\theta)d\theta\end{equation}
 and after is
-\begin{equation}\label{eq:entropy-posterior}H_2(\B{y}, \B{d}) = \int_{\Theta}p(\theta| \B{y}, \B{d})\log p(\theta| \B{y}, \B{d})d\theta\end{equation}
+\begin{equation}\label{eq:entropy-posterior}H_{\theta | \B{y}, \B{d}} = \int_{\Theta}p(\theta| \B{y}, \B{d})\log p(\theta| \B{y}, \B{d})d\theta\end{equation}
 The gain of information must thus be
-\begin{equation}H_\textrm{gain}(\B{y}, \B{d}) = H_2(\B{y}, \B{d}) - H_1\end{equation}
+\begin{equation}H_\textrm{gain} = H_{\theta | \B{y}, \B{d}} - H_\theta\end{equation}
 If we instead regard equation \ref{eq:entropy-prior} and \ref{eq:entropy-posterior} as expectations we get
-\begin{equation} = \mathbb{E}_\theta[\log p(\theta | \B{y}, \B{d})] - \mathbb{E}_\theta [\log p(\theta )]  = \mathbb{E}_\theta [\log(p(\theta | \B{y}, \B{d})) - \log(p(\theta))]\end{equation}
+\begin{equation} = \mathbb{E}_{\theta | \B{y}, \B{d}}[\log p(\theta | \B{y}, \B{d})] - \mathbb{E}_\theta [\log p(\theta )]\end{equation}
 Before we perform the experiment, we do not know what the outcome will be. Instead, we'll just regard the expected outcome by taking the expectation over $\B{y}$:
-\begin{equation} \label{eq:mi}\mathbb{E}_\B{y}[H_\textrm{grain}(\B{y}, \B{d})]  = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log(p(\theta | \B{y}, \B{d})) - \log(p(\theta))]]\end{equation}
+\begin{equation} \label{eq:mi}\mathbb{E}_\B{y}[H_\textrm{gain}]  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \mathbb{E}_{\theta}[\log(p(\theta))]]\end{equation}\todo{To Oswin: In my notes, we put this under one single expectation. This is done with reparameterization, right?}
 This expression is called the \textit{Mutual Information} between the prior and posterior, and will be denoted $I(\B{d})$.
 We can put a new interpretation upon this by expanding equation \ref{eq:mi} using Bayes' rule:
-\begin{equation} I(\B{d})  = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log(p(\B{y} | \B{\theta}, \B{d})) - \log(p(\B{y}|\B{d}))]]\end{equation}
+\begin{equation} I(\B{d})  = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log(p(\B{y} | \B{\theta}, \B{d})) - \log(p(\B{y}|\B{d}))]]\end{equation} 
 Then we can use that $\frac{p(\B{y}, \B{\theta}|\B{d})}{p(\theta)}=p(\B{y| \theta, \B{d}})$:
 \begin{equation} I(\B{d})  = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log\left(\frac{p(\B{y}, \B{\theta}|\B{d})}{p(\theta)}\right) - \log(p(\B{y}|\B{d}))]] = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log\left(\frac{p(\B{y}, \B{\theta}|\B{d})}{p(\theta)p(\B{y}|\B{d})}\right)]]\end{equation}
 $$ = \textsc{KL}(p(\B{y}, \theta | \B{d})|| p(\theta)p(\B{y}|\B{d}))$$
@@ -56,7 +56,7 @@ Instead, we will use the reparamerization trick to sample M samples of $\B{z}\in
 
 where $A_\B{y}$ is a matrix such that $A_\B{y}A_\B{y}^T = \Sigma_\B{y}$. 
 From equation \ref{eq:likelihood} we have that $p(\B{y}| \theta, \B{d}) = \mathcal{N}(\B{y}; \B{d}\theta, \sigma^2_\B{y}I_n)$ so we must have $A_{\B{y}|\theta, \B{d}} = \sigma^2_{\B{y}}I_n$
-thus 
+thus  \todo{make z different each iteration}
 \begin{equation}
   \label{eq:mi-sampled}
   I(\B{d}) \approx \frac{1}{NM}\sum_{i=0}^N\sum_{j=0}^M(\log (p(\theta_i | \B{d} \theta_i + \sigma^2_{\B{y}}\B{z}_j, \B{d})) - \log(p(\theta_i)))
