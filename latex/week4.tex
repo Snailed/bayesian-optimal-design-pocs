@@ -48,7 +48,7 @@ From now on, every mention of ELBO is with regards to $\B{y} = \theta \B{d} + \e
 Let $x=\B{d}$, $y=\lambda$, $g(\B{d}) = \arg \max_{\lambda} \textsc{ELBO}_{\B{d}}(q^{\lambda})$, $f(\B{d}, \lambda) = \nabla_{\lambda}\textsc{ELBO}_{\B{d}}(q^{\lambda})$.
 \\
 First, we need to fix a point $(\B{d}', \lambda')$ such that $\nabla_{\lambda}\textsc{ELBO}_{\B{d}'}(q^{\lambda'}) = 0$.
-If we take any $\B{d}'$, and pick $\lambda'$ to be any local optimum $\lambda' = g(\B{d})$, then the gradient must be $0$ at that point.
+If we take any $\B{d}'$, and pick $\lambda'$ to be any local optimum $\lambda' = g(\B{d'})$, then the gradient must be $0$ at that point.
 If the hessian then is invertible, we must have:
 \begin{equation}
   \nabla_{\B{d}} \arg \max_{\lambda} \textsc{ELBO}_{\B{d}}(q^{\lambda})\Bigr\rvert_{\theta}= 
@@ -61,9 +61,6 @@ Computing both the variational hessian and the variational mixed partials should
 Again, we will approach calculating the expectations using Monte Carlo sampling. From \eqref{eq:variational-mi-2}, we will instead compute
 \begin{equation}\nabla_\B{d} I(\B{d}) \approx \sum_{i}^N \sum_{j}^M \frac{1}{q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})}\times \nabla_{\B{d}}q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})\end{equation}
 $$\ \textrm{where}\ \B{y}_{ij} = \B{d}\theta_j + \epsilon_i,\ \theta_j = \mu_\theta + \B{A}_\theta\B{z}_j,\ \epsilon_i \sim \mathcal{N}(0, \sigma^2_\B{y} I_\ell),\ \B{z} \sim \mathcal{N}(0, I_M)$$
-To try to keep numerically stable, we will use the log-sum-exp trick:
-\begin{equation}= \sum_{i}^N \sum_{j}^M \exp (\log \nabla_{\B{d}}q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})- \log q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})I_\ell) \label{eq:sample-mi-var}\end{equation}
-
 
 \subsection{Implementation}
 \subsubsection{Reducing Computation Time}

@@ -41,14 +41,14 @@ Let us now look at how one can find a good variational family for the linear reg
 An easy guess would be to pick $q$ from a family of multivariate Gaussian distributions, since we know from conjugacy between the prior and likelihood that the posterior must also be multivariate Gaussian.
 Thus, one can expect $q^*$ to be able to estimate $p$ perfectly.\\
 This has the nice consequence of turning the KL-divergence into a closed form expression, since both $q$ and $p$ follow multivariate normal distributions \cite{kld-gaussian}.\\
-\begin{equation}\textsc{KL}(q || p) = \frac{1}{2}\left(\textrm{tr} (\Sigma_p^{-1}\Sigma_q) + (\mu_p -\mu_q)^T\Sigma_p(\mu_p - \mu_q) - k + \log \frac{|\Sigma_p|}{|\Sigma_q|}\right)\end{equation}
+\begin{equation}\textsc{KL}(q || p) = \frac{1}{2}\left(\textrm{tr} (\Sigma_p^{-1}\Sigma_q) + (\mu_p -\mu_q)^T\Sigma_p(\mu_p - \mu_q) - d + \log \frac{|\Sigma_p|}{|\Sigma_q|}\right)\end{equation}
 We do have a problem, however: The first expectation of \eqref{eq:elbo-3} is an integral without a closed-form solution.
 Thus, we wish to approximate it using Monte Carlo integration. 
 To be able to sample $\theta$s from $q$, we will need to use the reparameterization trick:
 By property of the multivariate normal distribution, there must exist some matrix $\B{A}$ such that $\theta \sim \mathcal{N}(\mu, \B{A} \B{A}^T)$ \cite{krause22}
 and such that
 \begin{equation}\theta = \mu + \B{A}\B{z}, \quad \textrm{where}\ \B{z}\sim \mathcal{N}(0,I_d)\end{equation}
-Thus, we can simply sample N samples of $\B{z}$ and calculate $\theta$ from that. 
+Thus, we can simply sample $N$ samples of $\B{z}$ and calculate $\theta$ from that. 
 This means that our ELBO estimate can be written as follows:
 \begin{equation}\textsc{ELBO}(q) \approx \frac{1}{N}\sum_{i=0}^N [\log p(\B{y} | \mu + \B{A}\B{z}^{(i)}, \B{d})] - \textsc{KL}(q || p)\label{eq:final-elbo}\end{equation}
 $\mu$ and $\B{A}$ are then the parameters of $q$ that we will try to find through optimization.

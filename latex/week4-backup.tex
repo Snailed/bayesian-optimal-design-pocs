@@ -16,7 +16,7 @@ $$\frac{\partial }{\partial \B{d}}\log p(\theta_i|\B{y}, \B{d}) = \frac{\partial
 Since $\B{w}$ is a function of $\B{d}$, a small change in $\B{d}$ is subsequently a small change in $\B{w}$. 
 We model this by multiplying the change of $\log q_\B{w}(\theta_i)$ by $\B{w}$ with the change of $\B{w}$ by $\B{d}$.
 $$=\frac{\partial}{\partial \B{w}}\log q_\B{w}(\theta_i)\Bigr\rvert_{\B{w} = \B{w}^*(\B{y}, \B{d})}\frac{\partial}{\partial \B{d}}\B{w}^*(\B{y},\B{d})$$
-This gives us what the litterature calls the \textit{indirect gradient} \todo{check if true, add citation}.
+This gives us what the litterature calls the \textit{indirect gradient}.
 Calculating the first part of this is rather simple through automatic differentiation.
 The second part requires a bit more carefulness, and can be achieved through using the Implicit Function Theorem:
 If for some $(\B{d}', \B{w}')$, $\frac{\partial }{\partial \B{w}}\log q_\B{w} (\theta_i)\Bigr\rvert_{\B{w} = \B{w}^*(\B{y}, \B{d})} = 0$

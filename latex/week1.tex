@@ -196,7 +196,7 @@ In the real world, $\sigma^2_\B{y}$ would be measured from observed data, and th
 , but for our toy representation, we are going to play around with many different possible priors and noise parameters.
 For a toy implementation, one can start by generating some data points $\B{d}$ and noise samples $\epsilon$ as well as deciding on some true, underlying weight parameters $\theta_{\textrm{true}}$.
 Then we can compute $\B{y}$ as in \eqref{eq:likelihood-generating}. 
-From this, we can simply implement the posterior distribution as in equation \ref{eq:posterior-mean} and \ref{eq:posterior-cov}.
+From this, we can simply implement the posterior distribution as in \eqref{eq:posterior-mean} and \eqref{eq:posterior-cov}.
 In Python, this can be done as follows:
 \begin{minted}{python}
 def analytical_posterior_params(d, y, mu_prior=mu_prior, cov_prior=cov_prior): # Get parameters of pdf
@@ -207,11 +207,11 @@ stats.multivariate_normal.pdf(theta, mean=mu, cov=cov)
 \end{minted}
 
 \subsection{Results}
-An example of how the posterior changes from the prior can be seen in figure \ref{fig:random-prior}, where 30 random prior means and covariances are plotted alongside their respective posterior.
+An example of how the posterior changes from the prior can be seen in Figure \ref{fig:random-prior}, where 30 random prior means and covariances are plotted alongside their respective posterior.
 It can be seen that the quality of the posterior is very dependent on the amount of data, as well as the inherent noise in the data.
 It can also be seen that in a scenario with low amount of data and high noise, having a prior that is close to the true weights makes it more probable that ones posterior will be as well.
 
-An example of a posterior predictive distribution is seen in figure \ref{fig:posterior-predictive}, where one can see how the distribution is most confident in the area that one would expect the most points to be, with only a few outliers.
+An example of a posterior predictive distribution is seen in Figure \ref{fig:posterior-predictive}, where one can see how the distribution is most confident in the area that one would expect the most points to be, with only a few outliers.
 Thus we've seen that the Bayesian linear regression model is able to learn the true weight parameters from data, and that it is able to do so even when the prior is very different from the true weight parameters. Now, we will move on to regarding the Bayesian Optimal Design problem.
 \begin{figure}[H]
 \centering

@@ -120,7 +120,7 @@ def decode_d(encoded_d, dim=2): # vector to matrix
 \end{minted}
 
 \subsubsection{Implementing the log-PDF of Multivariate Normal Distribution}
-Optimizing over this MI objective function means calculating the gradient of it. 
+Optimizing over this Mutual Information objective function means calculating the gradient of it. 
 We will use \texttt{autograd.grad} to do this, which necessitates implementing the log-PDF of the multivariate normal distribution by hand, 
 since the one supplied by \texttt{autograd.scipy.stats} does not handle the case where the mean and covariance carries information about the computation graph, which also will be necessary later.\\
 The log-PDF of the multivariate normal distribution is given by:
