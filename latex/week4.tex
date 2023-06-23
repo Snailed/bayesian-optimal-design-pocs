@@ -1,17 +1,17 @@
 \section{Week 5-6}
 \subsection{Objective}
 For the final section of the project, we will try to see how to combine the Bayesian Optimal Design problem from week 2 with the variational inference framework from week 3-4, 
-leading to a general framework for Bayesian Optimal Design that scales to many different kinds of models.
+leading to a general framework for Bayesian Optimal Design that scales to many different kinds of model.
 % The objective of this week is to integrate our Bayesian Optimal Design optimizer from week 2 with our linear regression variational inference optimizer from week 3.
 \subsection{Theory}
 \subsubsection{Finding the gradient of the Mutual Information}
 In week 2, we neatly assumed that \textt{autograd.grad} was able to find the gradient 
 of the mutual information with respect to $\B{d}$. 
 When one uses variational inference to compute the posterior, this becomes nontrivial, since one needs to differentiate through the parameters as a function of the design $\B{d}$ \cite{lorraine19}.
-We can see this from equation \ref{eq:mi}:
-\begin{equation}I(\B{d}) = \mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (p(\theta | \B{y}, \B{d})) - \log p(\theta)]]\end{equation}
+We can see this from \eqref{eq:mi}:
+\begin{equation}I(\B{d}) = \mathbb{E}_{\B{\theta}}[\mathbb{E}_{\B{y} | \theta, \B{d}}[\log (p(\theta | \B{y}, \B{d})) - \log p(\theta)]]\end{equation}
 When using variational inference, this changes to
-\begin{equation}\label{eq:variational-mi}I(\B{d}) \approx \mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (q^*(\theta)) - \log p(\theta)]],\ \textrm{where}\ q^*(\theta) = \arg \max_q \textsc{ELBO}_{\B{d}, \B{y}}(q)\end{equation}
+\begin{equation}\label{eq:variational-mi}I(\B{d}) \approx \mathbb{E}_{\B{\theta}}[\mathbb{E}_{\B{y}|\theta, \B{d}}[\log (q^*(\theta)) - \log p(\theta)]],\ \textrm{where}\ q^*(\theta) = \arg \max_q \textsc{ELBO}_{\B{d}, \B{y}}(q)\end{equation}
 From now on, we will explicitly denote what $\B{d}$ and $\B{y}$ the ELBO is taken with regards to.
 Taking the gradient of \eqref{eq:variational-mi} and using reparamerization results in
 \begin{equation}\nabla_\B{d} I(\B{d}) = \nabla_\B{d}\mathbb{E}_{\B{\theta}}[\mathbb{E}_{\B{y} | \theta, \B{d}}[\log (q^*(\theta)) - \log p(\theta)]]\label{eq:var-mi-reparam}\end{equation}
@@ -56,7 +56,7 @@ If the hessian then is invertible, we must have:
   \underbrace{\nabla_{\lambda}\nabla_{\B{d}}\textsc{ELBO}_{\B{d}}(q^*)}_{\textrm{variational mixed partials}}
   \label{eq:variational-jacobian}
 \end{equation}
-Computing both the variational hessian and the variational mixed partials should then be relatively simple using automatic differentiation.
+Computing both the variational hessian and the variational mixed partials should then be possible using automatic differentiation.
 \subsubsection{Adapting to sampling}
 Again, we will approach calculating the expectations using Monte Carlo sampling. From \eqref{eq:variational-mi-2}, we will instead compute
 \begin{equation}\nabla_\B{d} I(\B{d}) \approx \sum_{i}^N \sum_{j}^M \frac{1}{q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})}\times \nabla_{\B{d}}q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})\end{equation}
@@ -99,7 +99,7 @@ def MI_grad(d):
     return decode_d(np.mean(np.array(results), axis=0), dim=2)
 \end{minted}
 This code produces results that can be shown in Figure \ref{fig:mi-1-var}. 
-As it can be seen, while it seems like the MI is very slowly rising, the algorithm is much more noisy, 
+As it can be seen, while it seems like the Mutual Information is very slowly rising, the algorithm is much more noisy, 
 and does not produce plots that look like the ones we saw in week 2 - even when the two implementations should be equivalent.\\
 \begin{figure}
   \centering
@@ -153,7 +153,7 @@ Running the nested optimization is very inefficient, with one iteration of the o
 Testing shows that if one replaces the inner optimization result (\texttt{q\_params}) with one optained through the analytical posterior, the results are similar to that of Figure \ref{fig:mi-1-var}.
 If one instead uses the variational posterior, the gradient becomes very large and thus the components of \textbf{d} quickly become too large to represent using floating point numbers. 
 Reducing the learning rate by a factor of $10^{-2}$ can mitigate this partially
-but the points still behave very erratically. An example of this can be seen in figure \ref{fig:mi-5-var} although this example is only after 30 iterations due to the inefficiency of the algorithm.
+but the points still behave very erratically. An example of this can be seen in Figure \ref{fig:mi-5-var} although this example is only after 30 iterations due to the inefficiency of the algorithm.
 As it can be seen, we cannot conclude that the algorithm converges nor actively moves towards an optimum due to high noise and low amount of iterations.
 
 \begin{figure}

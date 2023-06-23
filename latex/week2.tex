@@ -26,13 +26,14 @@ The gain of information must thus be
 If we instead regard equation \ref{eq:entropy-prior} and \ref{eq:entropy-posterior} as expectations we get
 \begin{equation} = \mathbb{E}_{\theta | \B{y}, \B{d}}[\log p(\theta | \B{y}, \B{d})] - \mathbb{E}_\theta [\log p(\theta )]\end{equation}
 Before we perform the experiment, we do not know what the outcome will be. Instead, we'll just regard the expected outcome by taking the expectation over the observed evidence $\B{y} | \B{d}$:
-\begin{equation} \label{eq:mi-bad}\mathbb{E}_\B{y}[H_\textrm{gain}]  = \mathbb{E}_{\B{y} | \B{d}}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \mathbb{E}_{\theta}[\log(p(\theta))]]\end{equation}
+\begin{equation} \label{eq:mi-bad}\mathbb{E}_{\B{y} | \B{d}}[H_\textrm{gain}]  = \mathbb{E}_{\B{y} | \B{d}}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \mathbb{E}_{\theta}[\log(p(\theta))]]\end{equation}
 This expression is called the \textit{Mutual Information} between the prior and posterior, and will be denoted $I(\B{d})$.\\
 % It is widely seen in the litterature \cite{lindley56}, \cite{ryan15} that the two inner expectation is put under one, namely $\mathbb{E}_{\theta}$, giving a slightly different definition which is closer tied to the KL-divergence\footnote{This new definition is not entirely equivalent to the one purely based on information. I have included both definitions to show how Mutual Information is related to information theory, as shown in \citet{lindley56}}.
-We can also rewrite the expectations as such using Bayes' rule:
-\begin{equation}\label{eq:mi}I(\B{d})  = \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - \mathbb{E}_{\theta}[\log(p(\theta))]\end{equation}
-\begin{equation}= \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \log(p(\theta)]\end{equation}
-\begin{equation}= \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d})) - \log(p(\theta)]]\end{equation}
+We can also rewrite the expectations as such using Bayes' rule and that $\B{\theta}$ is indendepent from $\B{y}|\B{d}$:
+\begin{equation}\label{eq:mi}I(\B{d})  = \mathbb{E}_{\B{y}|\B{d}}[\mathbb{E}_{\theta| \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - \mathbb{E}_{\theta}[\log(p(\theta))]\end{equation}
+\begin{equation}= \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - \mathbb{E}_{\theta}[\log(p(\theta))]\end{equation}
+\begin{equation}= \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \log(p(\theta))]\end{equation}
+\begin{equation}= \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d})) - \log(p(\theta))]]\end{equation}
 We can now use Bayes' rule to get
 
 % We can put a new interpretation upon this by expanding equation \ref{eq:mi} using Bayes' rule:
@@ -47,18 +48,15 @@ Thus, the Mutual Information metric measures how close the prior and the evidenc
 If $\B{d}$ is picked such that the prior has a high probability of being able to predict $\B{y}|\B{d}$, then the mutual information is going to be close to 0. 
 If, on the contrary, $\B{d}$ is picked such that the prior has a low probability of being able to predict $\B{y}|\B{d}$, the mutual information is going to be large.
 Thus one could expect that an optimizer would prefer to pick a $\B{d}$ within an area where the prior is not very representative of the underlying generating function.
-Of course, in an experimental design context we do not have access to this underlying function as we might not be able to simulate experiments accurately. Instead, the expectation expressions in \ref{eq:mi}
+Of course, in an experimental design context we do not have access to this underlying function as we might not be able to simulate experiments accurately. Instead, the expectation expressions in \eqref{eq:mi}
 makes it such that we only regard the expected information gain for any given underlying function.
 For the rest of this project, we will regard the definition of mutual information as in \eqref{eq:mi}.
 
 \subsubsection{Evaluating the Mutual Information through sampling}
-Without using any assumptions about the nature of our model or data, we can utilize Monte Carlo sampling to optain an accurate estimate on the expectations in equation \ref{eq:mi}.
-First we'll use that the prior is independent of $\B{y}$ to get
+Without using any assumptions about the nature of our model or data, we can utilize Monte Carlo sampling to optain an accurate estimate on the expectations in \eqref{eq:mi}.
+First we'll use that the prior is independent of $\B{y}|\B{d}$ to get
 \begin{equation}
-  I(\B{d})  = \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \mathbb{E}_{\theta}[\log(p(\theta))]]
-\end{equation}
-\begin{equation}
-  = \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - \mathbb{E}_{\theta}[\log(p(\theta))]
+  I(\B{d}) = \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - \mathbb{E}_{\theta}[\log(p(\theta))]
 \end{equation}
 \begin{equation}
   = \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - H_\theta
@@ -69,7 +67,7 @@ Then we can use that entropy of multivariate gaussian distributions has a closed
 \end{equation}
 Then we can sample the nested expectations. For $N$ samples of $\theta \sim p(\theta)$ and $M$ samples of $\B{y}_i \sim p(\B{y}_i | \theta_i, \B{d})$ this looks like
 \begin{equation}
-  I(\B{d}) \approx \frac{1}{NM}\sum_{i=0}^N\sum_{j=0}^M(\log (p(\theta_i | \B{y}_{ij}, \B{d}))) - \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)
+  \label{eq:mi-sampled}I(\B{d}) \approx \frac{1}{NM}\sum_{i=0}^N\sum_{j=0}^M(\log (p(\theta_i | \B{y}_{ij}, \B{d}))) - \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)
 \end{equation}
 
 \subsubsection{Stochastic Optimization}
@@ -78,7 +76,7 @@ From some starting point $\B{d}_0$, iteratively update $\B{d}_i$ by
 \begin{equation}
   \B{d}_i = \B{d}_{i-1} + \alpha \frac{1}{10^c + i \times 10^{-\beta}} \nabla_{\B{d}} I(\B{d}_{i-1})
 \end{equation}
-where $\alpha, \beta, c \in \mathbb{R}$ are hyperparameters that ensures a slow converges to tailor the natural variance that occurs when using Monte Carlo methods.
+where $\alpha, \beta, c \in \mathbb{R}$ are hyperparameters that ensures a slow convergence to tailor the variance that occurs when using Monte Carlo methods.
 
 \subsection{Implementation}
 The mutual information metric can be implemented using the sampling method like so:
@@ -123,8 +121,8 @@ def decode_d(encoded_d, dim=2): # vector to matrix
 
 \subsubsection{Implementing the log-pdf of multivariate normal distribution}
 Optimizing over this MI objective function means calculating the gradient of it. 
-We will again use \textt{autograd.grad} to do this, which nescessitates implementing the log-pdf of the multivariate normal distribution by hand, 
-since the one supplied by \textt{autograd.scipy.stats} does not handle the case where the mean and covariance carries information about the computation graph.\\
+We will use \textt{autograd.grad} to do this, which nescessitates implementing the log-pdf of the multivariate normal distribution by hand, 
+since the one supplied by \textt{autograd.scipy.stats} does not handle the case where the mean and covariance carries information about the computation graph, which also will be nescessary later.\\
 The log-pdf of the multivariate normal distribution is given by:
 \begin{equation}
   \log \mathcal{N}(x; \mu, \Sigma) = -\frac{1}{2}(n\log(2\pi) + \log(\det(\Sigma)) + (x - \mu)^T\Sigma^{-1}(x - \mu))
@@ -142,28 +140,29 @@ def stable_multivariate_gaussian_logpdf(x, mu, cov):
     return log_prob
 \end{minted}
 \subsection{Results}
-If we regard the problem with $\ell = 10$ datapoints and $d=2$ dimensions with a zero-prior mean and identity prior covariance, 
-we will data that is closer to the optimum to be spread out wider and more evenly in the parameter space.
-This can be seen if one regards equation \ref{eq:mi-sampled}. 
+If we regard the problem with $\ell = 10$ datapoints and $d=2$ dimensions with a zero-mean prior with identity prior covariance, 
+we will see data closer to the optimum be spread out wider and more evenly in the parameter space.
+This can be seen if one regards \eqref{eq:mi-sampled}:
 If $\B{d}$ is picked such that $\B{d}\theta_i$ has a high probability of being a small number, then
 $\B{d}\theta_i + \sigma^2_\B{y}\B{z}_j$ is going to get dominated by the noise term $\sigma^2_\B{y}\B{z}_j$.
 Thus, the log-posterior $\log p(\theta_i | \B{d}\thta_i + \sigma^2_\B{y}\B{z}_j, \B{d})$ will be smaller.
 If on the other hand, $\B{d}$ is picked such that $\B{d}\theta_i$ has a high probability of being a large number, then $\B{d}\theta_i$ is going to dominate the noise term
 and the posterior has a higher probability of being a large number.\\
-In figure \ref{fig:mi-2d}, we can see if start position of 10 datapoints are on top of eachother, all at $(0;0)$, they will swiftly move to a more spread out formation.\\
+In Figure \ref{fig:mi-2d}, we can see if the start position consists of 10 datapoints on top of eachother at $(0,0)$, they will swiftly move to a more spread out formation.\\
 If we choose a zero-mean prior with an identity covariance, the points will spread out instantly from the center. If we choose a non-zero mean and non-identity covariance, 
 the gradient seems to become more steep such that some of the points can move away quite fast.
 If we insert a regularization factor $\mathcal{L} = 10^{-2}\times |\B{d}|^2$, the points will diverge confidently from the start position until some point, where they will start to stutter and not move much more.
 
 \\
 \begin{figure}
-  \begin{subfigure}{.33\textwidth}
+  \centering
+  \begin{subfigure}{.5\textwidth}
     \includegraphics[width=0.8\textwidth]{week2/mi-2d-unit.png}
-  \end{subfigure}
-  \begin{subfigure}{.33\textwidth}
+  \end{subfigure}%
+  \begin{subfigure}{.5\textwidth}
     \includegraphics[width=0.8\textwidth]{week2/mi-2d-non-unit.png}
   \end{subfigure}
-  \begin{subfigure}{.33\textwidth}
+  \begin{subfigure}{.5\textwidth}
     \includegraphics[width=0.8\textwidth]{week2/mi-2d-reg.png}
   \end{subfigure}
   \centering
@@ -171,13 +170,14 @@ If we insert a regularization factor $\mathcal{L} = 10^{-2}\times |\B{d}|^2$, th
   \label{fig:mi-2d}
 \end{figure}
 \begin{figure}
-  \begin{subfigure}{.33\textwidth}
+  \centering
+  \begin{subfigure}{.5\textwidth}
     \includegraphics[width=0.8\textwidth]{week2/mi-over-time-zero.png}
-  \end{subfigure}
-  \begin{subfigure}{.33\textwidth}
+  \end{subfigure}%
+  \begin{subfigure}{.5\textwidth}
     \includegraphics[width=0.8\textwidth]{week2/mi-over-time-non-zero.png}
   \end{subfigure}
-  \begin{subfigure}{.33\textwidth}
+  \begin{subfigure}{.5\textwidth}
     \includegraphics[width=0.8\textwidth]{week2/mi-over-time-reg.png}
   \end{subfigure}
   \centering

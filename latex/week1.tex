@@ -1,40 +1,41 @@
 \section{Week 1}
 \subsection{Objective}
-For week 1, we're going to explore the linear regression problem from a Bayesian perspective. 
-First we are going to state essential model assumptions, from which we can examine the consequences of these using Bayes' rule.
+For week 1, the main objective is to explore the linear regression problem from a Bayesian perspective. 
+First the essential model assumptions will be stated, from which the consequences of these can be examined using Bayes' rule.
 This will be used to see how we can incorporate previous knowledge into the model and see how observing new data will change our model.
-While this is apparent for any regression model, we will also demonstrate how we can actually derive an exact posterior parameter distribution in the case of linear regression.\\
-In the end, we are going to implement a simple linear regression model in Python, and explore how the prior model assumptions affect our resulting model.
+While this is apparent for any regression model, it will also be demonstrated how one can derive an exact posterior parameter distribution in the case of linear regression.\\
+In the end, a simple linear regression model will be implemented in Python, the prior model assumptions effect on our resulting model will be explored.
 % The objective of this week is to explore the basics of probabilistic machine learning by implementing a Bayesian linear regression model 
 % and explore how it is affected by its different hyperparameters like choice of prior as well as the variance and quantity of data points.
 % \todo{Notes from meeting: Make 2D plot over parameter space that shows how the posterior moves from the prior. Update from Oswin's notes}
 \subsection{Theory}
 \subsubsection{The regression problem and Bayes' rule}
-First, we are going to state the regression problem in general: 
-Given a dataset $\mathcal{D} = (\B{d}, \B{y})$, where $\B{d}\in \mathbb{R}^{\ell \times d}$ and $\B{y} \in \mathbb{R}^{\ell}$, 
-we wish to find some function $\phi_\theta \in \mathbb{R}^{\ell \times d} \rightarrow \mathbb{R}^{\ell}$ such that
+The general regression problem can be stated like so \cite{krause22}:
+Given a dataset $\mathcal{D} = (\B{d}, \B{y})$, where $\B{d}\in \mathbb{R}^{\ell \times d}$ and $\B{y} \in \mathbb{R}^{\ell}$,  find some function $\phi_\theta \in \mathbb{R}^{\ell \times d} \rightarrow \mathbb{R}^{\ell}$ such that
 \begin{equation}
   \label{eq:general-regression}
-\phi(\B{d}) \approx \B{y}
+\phi_\theta(\B{d}) \approx \B{y}
 \end{equation}
-where $\phi$ takes some vector of parameters $\theta$.\\
-In the Bayesian approach, we are going to describe the probability distribution of $\B{y}$ with no additional information as $p(\B{y})$, called the \textit{marginal}.
-If we have observed any data $\B{d}$ and have some set of parameters $\theta$ such that equation \ref{eq:general-regression} is upheld, then we have additional information about the distribution of $\B{y}$.
-This will be described as the \textit{likelihood} $p(\B{y} | \B{d}, \B{\theta})$.\\
-We might have some prior information on how the parameters $\B{\theta}$ are distributed - perhaps from prior experiments, domain knowledge or qualified guessing. This can be encoded into the \textit{prior} distribution $p(\B{\theta})$.
-Given a likelihood, a marginal, and a prior, we can use Bayes' rule to find the \textit{posterior} distribution of $\B{\theta}$ given the data $\B{d}$ and target values $\B{y}$:
+where $\phi_\theta$ takes some vector of parameters $\theta$.\\
+In the Bayesian approach, the probability distribution of $\B{y}$ given data $\B{d}$ can be described by $p(\B{y} | \B{d})$, called the \textit{evidence}.
+% If we have observed any data $\B{d}$ and have some set of parameters $\theta$ such that equation \ref{eq:general-regression} is upheld, then we have additional information about the distribution of $\B{y}$.
+The probability of $\B{y}$ being generated from some $\phi_\theta$ while having observed $\B{d}$ can be described by $p(\B{y}|\theta, \B{d})$
+called the \textit{likelihood}.\\
+One might have some prior information on how the parameters $\B{\theta}$ are distributed - perhaps from prior experiments, domain knowledge or qualified guessing. This can be encoded into the \textit{prior} distribution $p(\B{\theta}|\B{d})$, which is often denoted as $p(\theta)$ since $\theta$ is often picked to be independent from $\B{d}$.\\
+Given a likelihood, a marginal, and a prior, 
+Bayes' rule can be used to find the \textit{posterior} distribution of $\B{\theta}$ given the data $\B{d}$ and target values $\B{y}$:
 \begin{equation}
   \label{eq:bayes-rule}
   p(\B{\theta} | \B{d}, \B{y}) = \frac{p(\B{y} | \B{d}, \B{\theta})p(\B{\theta})}{p(\B{y| \B{d}})}
 \end{equation}
-What the posterior distribution $p(\B{\theta} | \B{d}, \B{y})$ models is the \textit{change of belief} from the prior model $p(\theta)$ given the \textit{evidence} $p(\B{y} | \B{d})$, $\B{d}$\cite{krause22}.
-It gives us a new best bet for the parameters $\B{\theta}$, which we can use to produce a better $\phi$ for equation $\ref{eq:general-regression}$.
+What the posterior distribution $p(\B{\theta} | \B{d}, \B{y})$ models is the \textit{change of belief} from the prior model $p(\theta)$ given the evidence $p(\B{y} | \B{d})$\cite{krause22}.
+It represents a new best bet for the parameters $\B{\theta}$, which can be used to produce a better $\phi_\theta$ for equation $\eqref{eq:general-regression}$.
 %we wish to find a set of model parameters $\theta \in \mathbb{R}^{\ell \times d}$ such that 
 \subsubsection{The linear regression problem}
-In the case of linear regression, we assume that $\phi$ is a linear function, i.e. $\phi(\B{d}) = \B{d}\B{\theta}$ where $\B{\theta}\in \mathbb{R}^{d}$. 
-It is also common to augment the dataset with an additional dimension set to 1, such that $\phi$ also models the intercept such that $\B{d} \in \mathbb{R}^{\ell \times d + 1}$ and $\theta \in \mathbb{R}^{d + 1}$. In this case $\theta_{d+1}$ will then be the intercept.\\
+In the case of linear regression, we assume that $\phi_\theta$ is a linear function, i.e. $\phi(\B{d}) = \B{d}\B{\theta}$ where $\B{\theta}\in \mathbb{R}^{d}$. 
+It is also common to augment the dataset with an additional dimension set to 1, such that $\phi_\theta$ also models the intercept such that $\B{d} \in \mathbb{R}^{\ell \times d + 1}$ and $\theta \in \mathbb{R}^{d + 1}$. In this case $\theta_{d+1}$ will then be the intercept.\\
 
-We are going to assume that the each target value $\B{y}$ can accurately be described as
+We are going to assume that the each target value $\B{y}^{(i)}$ can accurately be described as
 \begin{equation}
   \label{eq:likelihood-generating}
   \B{y}^{(i)} = \B{d}^{(i)}\theta + \epsilon
@@ -55,11 +56,10 @@ When modelling the prior information, one could choose to model the parameter di
   \label{eq:prior}
   p(\B{\theta}) = \mathcal{N}(\theta; \mu_{\theta}, \Sigma_\theta)
 \end{equation}
-where $\mu_\theta$, $\Sigma_\theta$ are chosen by the model designer. 
-For linear regression, it is common to assume that $\mu_\theta = 0$ \cite{krause22}, which we will do as well. \\
-The last term of equation \ref{eq:bayes-rule} is the marginal distribution $p(\B{y})$, which is the probability of observing the target values $\B{y}$ without any additional information. 
+where $\mu_\theta$, $\Sigma_\theta$ are chosen by the model designer. \\
+The last term of equation \ref{eq:bayes-rule} is the marginal distribution $p(\B{y}| \B{d})$, which is the probability of observing the target values $\B{y}$ without any additional information. 
 This term is difficult to make any reasonable assumptions about, and can thus hard to compute in practice.
-Lukily, it mostly acts as a normalization term that makes sure that the posterior distribution integrates to 1, so it can for many use cases be safely ignored.
+Luckily, it mostly acts as a normalization term that makes sure that the posterior distribution integrates to 1, so it can for many use cases be safely ignored.
 As we will see, for a linear regression problems with these assumptions, we will indeed not need it.
 \subsubsection{An analytical solution for the posterior distribution}
 Let us outline a possible derivation for the posterior distribution: Given the likelihood and prior, we can describe the joint distribution $p(\theta, \B{y} | \B{d})$ as
@@ -96,7 +96,7 @@ To perform these steps, we are going to use some useful lemmas about the multiva
   \begin{equation}\mu_{2|1}=\mu_2 + \Sigma_{21}\Sigma_{11}^{-1}(X_1 - \mu_1),\quad \Sigma_{2|1} = \Sigma_{22} - \Sigma_{21}\Sigma_{11}^{-1}\Sigma_{21}^T\end{equation}
 \end{lemma}
 \begin{proof}
-  See \citet{krause22} \todo{implement proof}
+  See \citet{krause22}
 \end{proof}
 \begin{lemma}
   \label{lemma:block-joint}
@@ -126,7 +126,7 @@ To perform these steps, we are going to use some useful lemmas about the multiva
 \begin{proof}
   Follows from Lemma \ref{lemma:block-conditional} and the definition of the multivariate normal distribution.
 \end{proof}
-If we regard the likelihood from equation \ref{eq:likelihood}, we can see that it is only dependent of $\theta$ in its mean-term.
+From the likelihood from \eqref{eq:likelihood}, it can be seen that it is only dependent of $\theta$ by a mean-shift with $\mu_{\B{y} | \theta, \B{d}} = 0 + \B{d}\theta$.
 Thus we can use Lemma \ref{lemma:block-joint} to get the joint distribution $p(\theta, \B{y} | \B{d})$:
 \begin{equation}
   \begin{bmatrix}[c]
@@ -168,7 +168,7 @@ To get the posterior distribution, we will need to use the conditioning Lemma \r
       \Sigma_\B{\theta}\B{d}^T & \Sigma_\B{\theta}
     \end{bmatrix}
   \right)
-\end{equation} \todo{remove d theta}
+\end{equation}
 With the conditioning lemma, we get the posterior distribution $p(\theta | \B{y}, \B{d}) = \mathcal{N}(\theta; \mu_{\theta| \B{y}, \B{d}}, \Sigma_{\theta | \B{y}, \B{d}})$:
 \begin{equation}
   \label{eq:posterior-mean}
@@ -212,19 +212,16 @@ It can be seen that the quality of the posterior is very dependent on the amount
 It can also be seen that in a scenario with low amount of data and high noise, having a prior that is close to the true weights makes it more probable that ones posterior will be as well.
 
 An example of a posterior predictive distribution is seen in figure \ref{fig:posterior-predictive}, where one can see how the distribution is most confident in the area that one would expect the most points to be, with only a few outliers.
-Thus we've seen that the Bayesian linear regression model is able to learn the true weight parameters from data, and that it is able to do so even when the prior is very different from the true weight parameters. Now, we will move on to regarding the Bayesian Optimal Design problem.how the distribution is most confident in the area that one would expect the most points to be, with only a few outliers.
-\todo{Make plots nicer, add "true" line for reference, add legend}
+Thus we've seen that the Bayesian linear regression model is able to learn the true weight parameters from data, and that it is able to do so even when the prior is very different from the true weight parameters. Now, we will move on to regarding the Bayesian Optimal Design problem.
 \begin{figure}[H]
-\begin{subfigure}{.33\textwidth}
-  \centering
+\centering
+\begin{subfigure}{.5\textwidth}
   \includegraphics[width=1\textwidth]{assets/week1/random-priors-new-few.png}
-\end{subfigure}%
-\begin{subfigure}{.33\textwidth}
-  \centering
+\end{subfigure}\\
+\begin{subfigure}{.5\textwidth}
   \includegraphics[width=1\textwidth]{assets/week1/random-priors-new-few-accurate.png}
 \end{subfigure}%
-\begin{subfigure}{.33\textwidth}
-  \centering
+\begin{subfigure}{.5\textwidth}
   \includegraphics[width=1\textwidth]{assets/week1/random-priors-new-many-inaccurate.png}
 \end{subfigure}
 \caption{30 different models trained on data sets with different sizes and noise levels. The more samples or lower noise, the closer to the true weights are the posteriors.}
@@ -234,6 +231,6 @@ Thus we've seen that the Bayesian linear regression model is able to learn the t
 \begin{figure}[H]
 \centering
 \includegraphics[width=.7\textwidth]{assets/week1/noise-1000.png}
-\caption{Posterior predictive}
+\caption{Contour plot of the posterior predictive distribution.}
 \label{fig:posterior-predictive}
 \end{figure}
