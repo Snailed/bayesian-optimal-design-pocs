@@ -14,12 +14,12 @@ When using variational inference, this changes to
 \begin{equation}\label{eq:variational-mi}I(\B{d}) \approx \mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (q^*(\theta)) - \log p(\theta)]],\ \textrm{where}\ q^*(\theta) = \arg \max_q \textsc{ELBO}_{\B{d}, \B{y}}(q)\end{equation}
 From now on, we will explicitly denote what $\B{d}$ and $\B{y}$ the ELBO is taken with regards to.
 Taking the gradient of \eqref{eq:variational-mi} and using reparamerization results in
-\begin{equation}\nabla_\B{d} I(\B{d}) = \nabla_\B{d}\mathbb{E}_{\B{y}}[\mathbb{E}_{\B{\theta}}[\log (q^*(\theta)) - \log p(\theta)]]\label{eq:var-mi-reparam}\end{equation}
-$$ \approx \mathbb{E}_{\B{\epsilon}}[\mathbb{E}_{\B{z}}[\nabla_\B{d}\log (q^*_{\B{y}', \B{d}}(\theta'))]],$$
+\begin{equation}\nabla_\B{d} I(\B{d}) = \nabla_\B{d}\mathbb{E}_{\B{\theta}}[\mathbb{E}_{\B{y} | \theta, \B{d}}[\log (q^*(\theta)) - \log p(\theta)]]\label{eq:var-mi-reparam}\end{equation}
+\begin{equation} \approx \mathbb{E}_{\B{z}}[\mathbb{E}_{\B{\epsilon}}[\nabla_\B{d}\log (q^*_{\B{y}', \B{d}}(\theta'))]],\label{eq:inner-grad}\end{equation}
 $$\ \textrm{where}\ \B{y}' = \B{d}\theta' + \epsilon,\ \theta' = \mu_\theta + \B{A}_\theta\B{z},\ \epsilon \sim \mathcal{N}(0, \sigma^2_\B{y} I_N),\ \B{z} \sim \mathcal{N}(0, I_M)$$
 Using the chain rule gives us
 \begin{equation}
-  = \mathbb{E}_{\B{\epsilon}}[\mathbb{E}_{\B{z}}[\frac{1}{q^*_{\B{y}', \B{d}}(\theta')} \times \nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta'))]],
+  = \mathbb{E}_{\B{z}}[\mathbb{E}_{\B{\epsilon}}[\frac{1}{q^*_{\B{y}', \B{d}}(\theta')} \times \nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta'))]],
   \label{eq:variational-mi-2}
 \end{equation}
 Thus we need to calculate $\nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta')$, or more specifically
@@ -77,7 +77,97 @@ One can futhermore compare this to the results from week 2, where we used automa
 \subsection{Results}
 It was not possible within the scope of this project to get a fully working implementation of the combined Bayesian Optimal Design and variational inference algorithms.
 One of the main problems is that a lot of noise is introduced when we compute the gradient ourselves. 
-This can be seen from the following code snippet that produces the points in figure \ref{fig:mi-1-var}
+The following code snippet uses autograd to compute the gradient inside the expectations of \eqref{eq:inner-grad}:
+\begin{minted}{python}
+def MI_grad(d):
+    N = 5
+    M = 1
+    results = []
+    eps = np.random.randn(N, len(d)) * np.sqrt(noise)
+    for i in range(N):
+        zs = np.random.randn(M, 3)
+        for j in range(M):
+            theta_j = mu_prior + A_prior @ zs[j]
+            y_ij = augment_d(d) @ theta_j + eps[i]
+            def g(d):
+                mean, cov = analytical_posterior_params(augment_d(d), y_ij, mu_prior=mu_prior, cov_prior=cov_prior)
+                return mean, np.linalg.cholesky(cov)
+            def q_(theta, lam):
+                mean, A = lam
+                return stable_multivariate_gaussian_logpdf(theta, mean, A @ A.T)
+            results.append(encode_d(grad(lambda d: q_(theta_j, g(d)))(d)))
+    return decode_d(np.mean(np.array(results), axis=0), dim=2)
+\end{minted}
+This code produces results that can be shown in Figure \ref{fig:mi-1-var}. 
+As it can be seen, while it seems like the MI is very slowly rising, the algorithm is much more noisy, 
+and does not produce plots that look like the ones we saw in week 2 - even when the two implementations should be equivalent.\\
+\begin{figure}
+  \centering
+  \begin{subfigure}{0.45\textwidth}
+    \includegraphics[width=\linewidth]{week4/mi-1-many.png}
+  \end{subfigure}
+  \begin{subfigure}{0.45\textwidth}
+    \includegraphics[width=\linewidth]{week4/mi-1-after-many.png}
+  \end{subfigure}
+  \caption{Movement of points using gradient from \eqref{eq:var-mi-reparam}. Blue is start position, orange is end position.}
+  \label{fig:mi-1-var}
+\end{figure}
+If this did work, we could implement the entire gradient of the Mutual Information like so.
+\begin{minted}{python}
+def q_grad(theta, q_params, d, y_i):
+    q_mean, q_A = q_params
+    inverse_hessian = np.linalg.inv(hessian(lambda eq: ELBO(augment_d(d), y_i, decode_q_params(eq)[0], decode_q_params(eq)[1]))(encode_q_params(q_params)))
+    mixed_partials = jacobian(lambda eq: grad(lambda d: ELBO(augment_d(decode_d(d, dim=2)), y_i, decode_q_params(eq)[0], decode_q_params(eq)[1]))(encode_d(d)))(encode_q_params(q_params)).T
+    jac = - inverse_hessian @ mixed_partials
+    return jac
+def MI_grad_5(d):
+    N = 5
+    M = 1
+    results = []
+    eps = np.random.randn(N, len(d)) * np.sqrt(noise)
+    for i in range(N):
+        zs = np.random.randn(M, 3)
+        for j in range(M):
+            theta_j = mu_prior + A_prior @ zs[j]
+            y_ij = augment_d(d) @ theta_j + eps[i]
+            def g(d):
+                mean, cov = analytical_posterior_params(augment_d(d), y_ij, mu_prior=mu_prior, cov_prior=cov_prior)
+                return mean, np.linalg.cholesky(cov)
+            def q_(theta, lam):
+                mean, A = lam
+                return stable_multivariate_gaussian_logpdf(theta, mean, A @ A.T)
+            
+            def inner_objective_f(encoded_q_params):
+                mean, A = decode_q_params(encoded_q_params)
+                elbo = ELBO(augment_d(d), y_ij, mean, A)
+                return -elbo
+            q_params = decode_q_params(optimize(grad(inner_objective_f), encode_q_params((mu_prior, A_prior)), 1e-1, 2, 0, 1e2))
+            g1 = encode_q_params(grad(lambda lam: q_(theta_j, lam))(q_params))
+            g2 = q_grad(theta_j, q_params, d, y_ij)
+            actual = g1 @ g2
+            c_part = 1/q_(theta_j, q_params)
+            results.append(c_part * actual)
+    return np.mean(np.array(results), axis=0)
+\end{minted}
+Running the nested optimization is very inefficient, with one iteration of the outer optimization algorithm taking $\sim 29$ seconds on an average laptop.
+Testing shows that if one replaces the inner optimization result (\texttt{q\_params}) with one optained through the analytical posterior, the results are similar to that of Figure \ref{fig:mi-1-var}.
+If one instead uses the variational posterior, the gradient becomes very large and thus the components of \textbf{d} quickly become too large to represent using floating point numbers. 
+Reducing the learning rate by a factor of $10^{-2}$ can mitigate this partially
+but the points still behave very erratically. An example of this can be seen in figure \ref{fig:mi-5-var} although this example is only after 30 iterations due to the inefficiency of the algorithm.
+As it can be seen, we cannot conclude that the algorithm converges nor actively moves towards an optimum due to high noise and low amount of iterations.
+
+\begin{figure}
+  \centering
+  \begin{subfigure}{0.45\textwidth}
+    \includegraphics[width=\linewidth]{week4/mi-5-after-30-iters.png}
+  \end{subfigure}
+  \begin{subfigure}{0.45\textwidth}
+    \includegraphics[width=\linewidth]{week4/mi-5-after-30-iters-plot.png}
+  \end{subfigure}
+  \caption{Movement of points from the full algorithm. Blue is start position, orange is end position.}
+  \label{fig:mi-5-var}
+\end{figure}
+
 % \subsection{old stuff}
 
 % \textbf{This is a working draft and should be sectioned into a more readable format, as well as have made notation consistent}

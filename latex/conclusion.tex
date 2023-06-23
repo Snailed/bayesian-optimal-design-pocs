@@ -1,11 +1,14 @@
 \section{Conclusion}
 Using the Mutual Information as an objective function, it was shown possible to optimize 
 the locations of datapoints of a linear regression model to maximize the expected information gain from measuring at such datapoints.
-This was both shown when using the exact posterior distribution and when using the variational approximation of the posterior distribution.
+This was shown when using the exact posterior distribution 
+and shown theoritically using the variational approximation of the posterior distribution.
 The latter required the use of the Implicit Function Theorem to differentiate through the nested optimization problems.
+Implementing the gradient efficiently and correctly using the Implicit Function Theorem was however not possible within the timeframe of the project,
+so it is yet to show the practicality of the method.
 
-While the theoritical derivations of the method are kept simple by using a linear regression model, the implementation was quite slow
-and due to the nested optimization, even after several batching initiatives were taken.
+While the theoritical derivations of the method are kept simple by using a linear regression model, the implementation is still very inefficient
+due to the nested optimization, even after several batching initiatives were taken.
 Since the optimization relied on sampling methods, the outer optimization algorithm required stochastic optimization methods,
 which usually requires a lot of iterations to converge. Thus, a lot of futher trial-and-error is required to make the implementation suitable for real-world applications.
 Specifically, the implementation was not tested on other types of model, where an optimal design is easier to recognize, which could lead to more confidence in the correctness of the implementation.

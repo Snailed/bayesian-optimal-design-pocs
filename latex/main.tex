@@ -73,7 +73,10 @@ As \citet{ryan15} (this one can be made into KL-divergence):
 \begin{equation}
   I_3(\B{d}) = \mathbb{E}_{\B{y} \sim p(\B{y} | \theta, \B{d})} \left[\mathbb{E}_{\theta \sim p(\theta | \B{y}, \B{d})}[\log p(\theta | \B{y}, \B{d}) - \log p(\theta)] \right]
 \end{equation}
-
+According to Oswin:
+\begin{equation}
+  I_3(\B{d}) = \mathbb{E}_{\B{y} \sim p(\B{y} | \B{d})} \left[\mathbb{E}_{\theta \sim p(\theta | \B{y}, \B{d})}[\log p(\theta | \B{y}, \B{d}) - \log p(\theta)] \right]
+\end{equation}
 
 \input{introduction}
 \input{week1}

@@ -25,21 +25,25 @@ The gain of information must thus be
 \begin{equation}H_\textrm{gain} = H_{\theta | \B{y}, \B{d}} - H_\theta\end{equation}
 If we instead regard equation \ref{eq:entropy-prior} and \ref{eq:entropy-posterior} as expectations we get
 \begin{equation} = \mathbb{E}_{\theta | \B{y}, \B{d}}[\log p(\theta | \B{y}, \B{d})] - \mathbb{E}_\theta [\log p(\theta )]\end{equation}
-Before we perform the experiment, we do not know what the outcome will be. Instead, we'll just regard the expected outcome by taking the expectation over $\B{y}$:
-\begin{equation} \label{eq:mi-bad}\mathbb{E}_\B{y}[H_\textrm{gain}]  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \mathbb{E}_{\theta}[\log(p(\theta))]]\end{equation}
-This expression is called the \textit{Mutual Information} between the prior and posterior, and will be denoted $I(\B{d})$.
-It is widely seen in the litterature \cite{lindley56}, \cite{ryan15} that the two inner expectation is put under one, namely $\mathbb{E}_{\theta}$, giving a slightly different definition which is closer tied to the KL-divergence\footnote{This new definition is not entirely equivalent to the one purely based on information. I have included both definitions to show how Mutual Information is related to information theory, as shown in \citet{lindley56}}.
-\begin{equation} \label{eq:mi}I(\B{d})  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta} [\log(p(\theta | \B{y}, \B{d})) - \log(p(\theta))]]\end{equation}
-This can be seen by using Bayes' rule on the new definition to get
+Before we perform the experiment, we do not know what the outcome will be. Instead, we'll just regard the expected outcome by taking the expectation over the observed evidence $\B{y} | \B{d}$:
+\begin{equation} \label{eq:mi-bad}\mathbb{E}_\B{y}[H_\textrm{gain}]  = \mathbb{E}_{\B{y} | \B{d}}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \mathbb{E}_{\theta}[\log(p(\theta))]]\end{equation}
+This expression is called the \textit{Mutual Information} between the prior and posterior, and will be denoted $I(\B{d})$.\\
+% It is widely seen in the litterature \cite{lindley56}, \cite{ryan15} that the two inner expectation is put under one, namely $\mathbb{E}_{\theta}$, giving a slightly different definition which is closer tied to the KL-divergence\footnote{This new definition is not entirely equivalent to the one purely based on information. I have included both definitions to show how Mutual Information is related to information theory, as shown in \citet{lindley56}}.
+We can also rewrite the expectations as such using Bayes' rule:
+\begin{equation}\label{eq:mi}I(\B{d})  = \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - \mathbb{E}_{\theta}[\log(p(\theta))]\end{equation}
+\begin{equation}= \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \log(p(\theta)]\end{equation}
+\begin{equation}= \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d})) - \log(p(\theta)]]\end{equation}
+We can now use Bayes' rule to get
 
 % We can put a new interpretation upon this by expanding equation \ref{eq:mi} using Bayes' rule:
-\begin{equation} I(\B{d})  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta} [\log(p(\B{y} | \B{\theta}, \B{d})) - \log(p(\B{y}|\B{d}))]]\end{equation} 
+\begin{equation} I(\B{d})  = \mathbb{E}_{\B{\theta}}[\mathbb{E}_{\B{y} | \theta, \B{d}} [\log(p(\B{y} | \B{\theta}, \B{d})) - \log(p(\B{y}|\B{d}))]]\end{equation} 
 Then we can use that $\frac{p(\B{y}, \B{\theta}|\B{d})}{p(\theta)}=p(\B{y| \theta, \B{d}})$:
-\begin{equation} I(\B{d})  = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log\left(\frac{p(\B{y}, \B{\theta}|\B{d})}{p(\theta)}\right) - \log(p(\B{y}|\B{d}))]] = \mathbb{E}_\B{y}[\mathbb{E}_\theta [\log\left(\frac{p(\B{y}, \B{\theta}|\B{d})}{p(\theta)p(\B{y}|\B{d})}\right)]]\end{equation}
+\begin{equation} I(\B{d})  = \mathbb{E}_{\B{\theta}}[\mathbb{E}_{\B{y} | \theta, \B{d}} [\log\left(\frac{p(\B{y}, \B{\theta}|\B{d})}{p(\theta)}\right) - \log(p(\B{y}|\B{d}))]]\end{equation}
+\begin{equation}= \mathbb{E}_{\B{\theta}}[\mathbb{E}_{\B{y} | \theta, \B{d}} [\log\left(\frac{p(\B{y}, \B{\theta}|\B{d})}{p(\theta)p(\B{y}|\B{d})}\right)]]\end{equation}
 $$ = \textsc{KL}(p(\B{y}, \theta | \B{d})|| p(\theta)p(\B{y}|\B{d}))$$
 Two random variables $X$ and $Y$ are said to be \textit{independent} if the product of their distributions is the same as their joint distribution i.e.
 \begin{equation}p(X,Y) = p(X)p(Y)\end{equation}
-Thus, this slightly altered Mutual Information metric measures how close the prior and the evidence \todo{check if indeed this is evidence}are to be independent. 
+Thus, the Mutual Information metric measures how close the prior and the evidence are to be independent. 
 If $\B{d}$ is picked such that the prior has a high probability of being able to predict $\B{y}|\B{d}$, then the mutual information is going to be close to 0. 
 If, on the contrary, $\B{d}$ is picked such that the prior has a low probability of being able to predict $\B{y}|\B{d}$, the mutual information is going to be large.
 Thus one could expect that an optimizer would prefer to pick a $\B{d}$ within an area where the prior is not very representative of the underlying generating function.
@@ -51,21 +55,21 @@ For the rest of this project, we will regard the definition of mutual informatio
 Without using any assumptions about the nature of our model or data, we can utilize Monte Carlo sampling to optain an accurate estimate on the expectations in equation \ref{eq:mi}.
 First we'll use that the prior is independent of $\B{y}$ to get
 \begin{equation}
-  I(\B{d})  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \mathbb{E}_{\theta}[\log(p(\theta))]]
+  I(\B{d})  = \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))] - \mathbb{E}_{\theta}[\log(p(\theta))]]
 \end{equation}
 \begin{equation}
-  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - \mathbb{E}_{\theta}[\log(p(\theta))]
+  = \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - \mathbb{E}_{\theta}[\log(p(\theta))]
 \end{equation}
 \begin{equation}
-  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - H_\theta
+  = \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - H_\theta
 \end{equation}
 Then we can use that entropy of multivariate gaussian distributions has a closed form solution:
 \begin{equation}
-  = \mathbb{E}_\B{y}[\mathbb{E}_{\theta | \B{y}, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)
+  = \mathbb{E}_\B{\theta}[\mathbb{E}_{\B{y}| \theta, \B{d}} [\log(p(\theta | \B{y}, \B{d}))]] - \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)
 \end{equation}
-Then we can sample the nested expectations. For $N$ samples of $\theta \sim p(\theta)$ and $M$ samples of $\B{y} \sim p(\B{y} | \theta, \B{d})$ this looks like
+Then we can sample the nested expectations. For $N$ samples of $\theta \sim p(\theta)$ and $M$ samples of $\B{y}_i \sim p(\B{y}_i | \theta_i, \B{d})$ this looks like
 \begin{equation}
-  I(\B{d}) \approx \frac{1}{NM}\sum_{i=0}^N\sum_{j=0}^M(\log (p(\theta_i | \B{y}_j, \B{d}))) - \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)
+  I(\B{d}) \approx \frac{1}{NM}\sum_{i=0}^N\sum_{j=0}^M(\log (p(\theta_i | \B{y}_{ij}, \B{d}))) - \frac{1}{2}\ln \det (2\pi e\Sigma_\theta)
 \end{equation}
 
 \subsubsection{Stochastic Optimization}
@@ -74,7 +78,7 @@ From some starting point $\B{d}_0$, iteratively update $\B{d}_i$ by
 \begin{equation}
   \B{d}_i = \B{d}_{i-1} + \alpha \frac{1}{10^c + i \times 10^{-\beta}} \nabla_{\B{d}} I(\B{d}_{i-1})
 \end{equation}
-where $\alpha, \beta, c \in \mathbb{R}$ are hyperparameters that ensures a slow converges to taylor the natural variance that occurs when using Monte Carlo methods.
+where $\alpha, \beta, c \in \mathbb{R}$ are hyperparameters that ensures a slow converges to tailor the natural variance that occurs when using Monte Carlo methods.
 
 \subsection{Implementation}
 The mutual information metric can be implemented using the sampling method like so:
