@@ -11,7 +11,7 @@ In the end, a simple linear regression model will be implemented in Python, the 
 \subsection{Theory}
 \subsubsection{The regression problem and Bayes' rule}
 The general regression problem can be stated like so \cite{krause22}:
-Given a dataset $\mathcal{D} = (\B{d}, \B{y})$, where $\B{d}\in \mathbb{R}^{\ell \times d}$ and $\B{y} \in \mathbb{R}^{\ell}$,  find some function $\phi_\theta \in \mathbb{R}^{\ell \times d} \rightarrow \mathbb{R}^{\ell}$ such that
+Given a data set $\mathcal{D} = (\B{d}, \B{y})$, where $\B{d}\in \mathbb{R}^{\ell \times d}$ and $\B{y} \in \mathbb{R}^{\ell}$,  find some function $\phi_\theta \in \mathbb{R}^{\ell \times d} \rightarrow \mathbb{R}^{\ell}$ such that
 \begin{equation}
   \label{eq:general-regression}
 \phi_\theta(\B{d}) \approx \B{y}
@@ -29,11 +29,11 @@ Bayes' rule can be used to find the \textit{posterior} distribution of $\B{\thet
   p(\B{\theta} | \B{d}, \B{y}) = \frac{p(\B{y} | \B{d}, \B{\theta})p(\B{\theta})}{p(\B{y| \B{d}})}
 \end{equation}
 What the posterior distribution $p(\B{\theta} | \B{d}, \B{y})$ models is the \textit{change of belief} from the prior model $p(\theta)$ given the evidence $p(\B{y} | \B{d})$\cite{krause22}.
-It represents a new best bet for the parameters $\B{\theta}$, which can be used to produce a better $\phi_\theta$ for equation $\eqref{eq:general-regression}$.
+It represents a new best bet for the parameters $\B{\theta}$, which can be used to produce a better $\phi_\theta$ for $\eqref{eq:general-regression}$.
 %we wish to find a set of model parameters $\theta \in \mathbb{R}^{\ell \times d}$ such that 
 \subsubsection{The linear regression problem}
 In the case of linear regression, we assume that $\phi_\theta$ is a linear function, i.e. $\phi(\B{d}) = \B{d}\B{\theta}$ where $\B{\theta}\in \mathbb{R}^{d}$. 
-It is also common to augment the dataset with an additional dimension set to 1, such that $\phi_\theta$ also models the intercept such that $\B{d} \in \mathbb{R}^{\ell \times d + 1}$ and $\theta \in \mathbb{R}^{d + 1}$. In this case $\theta_{d+1}$ will then be the intercept.\\
+It is also common to augment the data set with an additional dimension set to 1, such that $\phi_\theta$ also models the intercept such that $\B{d} \in \mathbb{R}^{\ell \times d + 1}$ and $\theta \in \mathbb{R}^{d + 1}$. In this case $\theta_{d+1}$ will then be the intercept.\\
 
 We are going to assume that the each target value $\B{y}^{(i)}$ can accurately be described as
 \begin{equation}
@@ -51,13 +51,13 @@ Assuming that the target values are independent, it must follow that
   \label{eq:likelihood}
   p(\textbf{y} | \B{d}, \B{\theta}) = \prod_{i=0}^\ell p(\textbf{y}^{(i)} | \B{d}^{(i)}, \B{\theta}) = \mathcal{N}(\B{y}; \B{d}\B{\theta}, \sigma^2_{\B{y}}I_\ell)
 \end{equation}
-When modelling the prior information, one could choose to model the parameter distribution as a multivariate gaussian distribution as well
+When modeling the prior information, one could choose to model the parameter distribution as a multivariate Gaussian distribution as well
 \begin{equation}
   \label{eq:prior}
   p(\B{\theta}) = \mathcal{N}(\theta; \mu_{\theta}, \Sigma_\theta)
 \end{equation}
 where $\mu_\theta$, $\Sigma_\theta$ are chosen by the model designer. \\
-The last term of equation \ref{eq:bayes-rule} is the marginal distribution $p(\B{y}| \B{d})$, which is the probability of observing the target values $\B{y}$ without any additional information. 
+The last term of \eqref{eq:bayes-rule} is the marginal distribution $p(\B{y}| \B{d})$, which is the probability of observing the target values $\B{y}$ without any additional information. 
 This term is difficult to make any reasonable assumptions about, and can thus hard to compute in practice.
 Luckily, it mostly acts as a normalization term that makes sure that the posterior distribution integrates to 1, so it can for many use cases be safely ignored.
 As we will see, for a linear regression problems with these assumptions, we will indeed not need it.
@@ -180,14 +180,14 @@ With the conditioning lemma, we get the posterior distribution $p(\theta | \B{y}
 \end{equation}
 Thus we have an analytical expression for the posterior distribution.
 \subsubsection{Using the posterior to optain model parameters}
-From this distribution, we can optain model parameters in several ways. 
+From this distribution, we can obtain model parameters in several ways. 
 A common choice is to pick the $\theta$ that maximizes the posterior. This is called the \textit{Maximum-a-posteriori} (MAP) estimate, and will for a normal distribution just be the posterior mean $\mu_{\theta | \B{y}, \B{d}}$.
 For other cases than linear regression, one can also use a mean over samples of $\theta$ from the posterior distribution, but for our case, this will converge against the posterior mean $\mu_{\theta | \B{y}, \B{d}}$.
 Another solution is to define a distribution called the \textit{posterior predictive} distribution, that for some new data points $\B{d}_{\textrm{new}}$ computes the corresponding $\B{y}_{\textrm{new}}$:
 \begin{equation}p(\B{y}_{\textrm{new}} | \B{d}_{\textrm{new}}, \B{d}, \B{y}) = \int p(\theta | \B{y}, \B{d}) p(\B{y}_{\textrm{new}} | \theta, \B{d}_\textrm{new})d\theta\end{equation}
 Integrals like these are usually solved by sampling - examples of this will be seen later. For now, we can use Lemma \ref{lemma:block-joint} to get
 \begin{equation}p(\B{y}_{\textrm{new}} | \B{d}_{\textrm{new}}, \B{d}, \B{y}) = \mathcal{N}(\B{y}_\textrm{new}; \B{d}_\textrm{new}^T\mu_{\theta|\B{y}, \B{d}}, \sigma^2_\B{y} + \B{d}_\textrm{new}^T\Sigma_{\theta | \B{y}, \B{d}}\B{d}_\textrm{new})\end{equation}
-Having the posterior predictive allows us to both sample a $\B{y}$ for a given $\B{d}$, choose the $\B{y}$ that maximises the distribution, and to give us some measure of the inherent uncertancy in the model \cite{krause22}.
+Having the posterior predictive allows us to both sample a $\B{y}$ for a given $\B{d}$, choose the $\B{y}$ that maximizes the distribution, and to give us some measure of the inherent uncertaincy in the model \cite{krause22}.
 
 \subsection{Implementation}
 Implementing a Bayesian linear regression model is fairly simple.
@@ -195,7 +195,7 @@ To begin with, one needs to decide on a prior distribution for $\theta$, as well
 In the real world, $\sigma^2_\B{y}$ would be measured from observed data, and the prior would be chosen based on the expected distribution of $\theta$ based on as much prior knowledge as possible
 , but for our toy representation, we are going to play around with many different possible priors and noise parameters.
 For a toy implementation, one can start by generating some data points $\B{d}$ and noise samples $\epsilon$ as well as deciding on some true, underlying weight parameters $\theta_{\textrm{true}}$.
-Then we can compute $\B{y}$ as in equation \ref{eq:likelihood-generating}. 
+Then we can compute $\B{y}$ as in \eqref{eq:likelihood-generating}. 
 From this, we can simply implement the posterior distribution as in equation \ref{eq:posterior-mean} and \ref{eq:posterior-cov}.
 In Python, this can be done as follows:
 \begin{minted}{python}
@@ -208,7 +208,7 @@ stats.multivariate_normal.pdf(theta, mean=mu, cov=cov)
 
 \subsection{Results}
 An example of how the posterior changes from the prior can be seen in figure \ref{fig:random-prior}, where 30 random prior means and covariances are plotted alongside their respective posterior.
-It can be seen that the quality of the posterior is very dependent on the amount of data, as well as the inherint noise in the data.
+It can be seen that the quality of the posterior is very dependent on the amount of data, as well as the inherent noise in the data.
 It can also be seen that in a scenario with low amount of data and high noise, having a prior that is close to the true weights makes it more probable that ones posterior will be as well.
 
 An example of a posterior predictive distribution is seen in figure \ref{fig:posterior-predictive}, where one can see how the distribution is most confident in the area that one would expect the most points to be, with only a few outliers.

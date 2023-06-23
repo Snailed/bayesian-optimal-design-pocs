@@ -31,7 +31,7 @@ Thus we can use the chain rule.
 \begin{equation}
   \nabla_\B{d} q^*_{\B{y}', \B{d}}(\theta') = \nabla_\lambda q^{\lambda}_{\B{y}', \B{d}}(\theta')\underbrace{\nabla_\B{d} \arg \max_\lambda \textsc{ELBO}_{\B{d}, \B{y}'}(q^\lambda)}_{\textrm{Jacobian}}
 \end{equation}
-The gradient, $\nabla_\lambda q^\lambda_{\B{y}',\B{d}}$, is simple to perform using automatical differentiation.
+The gradient, $\nabla_\lambda q^\lambda_{\B{y}',\B{d}}$, is simple to perform using automatic differentiation.
 The Jacobian of the variational parameters with regards to the design $\B{d}$, needs very careful consideration. 
 We will approach this using the Implicit Function Theorem \cite{lorraine19}:
 \begin{theorem}
@@ -39,7 +39,7 @@ We will approach this using the Implicit Function Theorem \cite{lorraine19}:
   Fix a point $(a, b)$ such that $f(a, b) = \B{0}$. 
   If the Jacobian $J_b^{f}(a, b)$ is invertible, then there must exist an open set $U \subseteq \mathbb{R}^n$ containing $a$
   such that there exists a continuously differentiable function $g: U \rightarrow \mathbb{R}^m$ such that $g(a) = b$ and $f(x, g(x)) = \B{0}$ for all $x \in U$.
-  Futhermore,
+  Furthermore,
   $$\nabla_{x}g(x) = -[J_y^f(x, g(x))]^{-1}J_{x}^{f}(x, g(x))$$
   \label{thm:ift}
 \end{theorem}
@@ -73,7 +73,7 @@ A big bottleneck is the computation of the Hessian and Jacobian of \eqref{eq:var
 Since we have the code and theoretical knowledge for each of the components that this implementation is composed of, 
 we can test each part of the implementation by comparing it to its analytical counterpart. 
 For example, one can replace the variational approximation with the analytical posterior to see how the variational approximation change the convergence of the Mutual Information metric.
-One can futhermore compare this to the results from week 2, where we used automatic differentiation to compute the entire gradient of the Mutual Information metric.
+One can furthermore compare this to the results from week 2, where we used automatic differentiation to compute the entire gradient of the Mutual Information metric.
 \subsection{Results}
 It was not possible within the scope of this project to get a fully working implementation of the combined Bayesian Optimal Design and variational inference algorithms.
 One of the main problems is that a lot of noise is introduced when we compute the gradient ourselves. 
@@ -150,7 +150,7 @@ def MI_grad_5(d):
     return np.mean(np.array(results), axis=0)
 \end{minted}
 Running the nested optimization is very inefficient, with one iteration of the outer optimization algorithm taking $\sim 29$ seconds on an average laptop.
-Testing shows that if one replaces the inner optimization result (\texttt{q\_params}) with one optained through the analytical posterior, the results are similar to that of Figure \ref{fig:mi-1-var}.
+Testing shows that if one replaces the inner optimization result (\texttt{q\_params}) with one obtained through the analytical posterior, the results are similar to that of Figure \ref{fig:mi-1-var}.
 If one instead uses the variational posterior, the gradient becomes very large and thus the components of \textbf{d} quickly become too large to represent using floating point numbers. 
 Reducing the learning rate by a factor of $10^{-2}$ can mitigate this partially
 but the points still behave very erratically. An example of this can be seen in Figure \ref{fig:mi-5-var} although this example is only after 30 iterations due to the inefficiency of the algorithm.
