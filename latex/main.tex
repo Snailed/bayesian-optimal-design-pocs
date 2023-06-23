@@ -61,23 +61,6 @@ natbib=true
 \begin{document}
 \maketitle
 \tableofcontents
-As derived in \citet{lindley56} and by me: and by me:
-\begin{equation}
-  I_1(\B{d}) = \mathbb{E}_{\B{y} \sim p(\B{y} | \theta, \B{d})} \left[\mathbb{E}_{\theta \sim p(\theta | \B{y}, \B{d})}[\log p(\theta | \B{y}, \B{d})] - \mathbb{E}_{\theta \sim p(\theta)} \left[ \log p(\theta) \right] \right]
-\end{equation}
-As \citet{lindley56} describes as an "alternative form"
-\begin{equation}
-  I_2(\B{d}) = \mathbb{E}_{\B{y} \sim p(\B{y} | \theta, \B{d})} \left[\mathbb{E}_{\theta \sim p(\theta)}[\log p(\theta | \B{y}, \B{d}) - \log p(\theta)] \right]
-\end{equation}
-As \citet{ryan15} (this one can be made into KL-divergence):
-\begin{equation}
-  I_3(\B{d}) = \mathbb{E}_{\B{y} \sim p(\B{y} | \theta, \B{d})} \left[\mathbb{E}_{\theta \sim p(\theta | \B{y}, \B{d})}[\log p(\theta | \B{y}, \B{d}) - \log p(\theta)] \right]
-\end{equation}
-According to Oswin:
-\begin{equation}
-  I_3(\B{d}) = \mathbb{E}_{\B{y} \sim p(\B{y} | \B{d})} \left[\mathbb{E}_{\theta \sim p(\theta | \B{y}, \B{d})}[\log p(\theta | \B{y}, \B{d}) - \log p(\theta)] \right]
-\end{equation}
-
 \input{introduction}
 \input{week1}
 \input{week2}
