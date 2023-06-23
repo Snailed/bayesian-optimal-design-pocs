@@ -9,7 +9,7 @@ In the end, a simple linear regression model will be implemented in Python, the 
 % and explore how it is affected by its different hyperparameters like choice of prior as well as the variance and quantity of data points.
 % \todo{Notes from meeting: Make 2D plot over parameter space that shows how the posterior moves from the prior. Update from Oswin's notes}
 \subsection{Theory}
-\subsubsection{The regression problem and Bayes' rule}
+\subsubsection{The Regression Problem and Bayes' rule}
 The general regression problem can be stated like so \cite{krause22}:
 Given a data set $\mathcal{D} = (\B{d}, \B{y})$, where $\B{d}\in \mathbb{R}^{\ell \times d}$ and $\B{y} \in \mathbb{R}^{\ell}$,  find some function $\phi_\theta \in \mathbb{R}^{\ell \times d} \rightarrow \mathbb{R}^{\ell}$ such that
 \begin{equation}
@@ -31,7 +31,7 @@ Bayes' rule can be used to find the \textit{posterior} distribution of $\B{\thet
 What the posterior distribution $p(\B{\theta} | \B{d}, \B{y})$ models is the \textit{change of belief} from the prior model $p(\theta)$ given the evidence $p(\B{y} | \B{d})$\cite{krause22}.
 It represents a new best bet for the parameters $\B{\theta}$, which can be used to produce a better $\phi_\theta$ for $\eqref{eq:general-regression}$.
 %we wish to find a set of model parameters $\theta \in \mathbb{R}^{\ell \times d}$ such that 
-\subsubsection{The linear regression problem}
+\subsubsection{The Linear Regression Problem}
 In the case of linear regression, we assume that $\phi_\theta$ is a linear function, i.e. $\phi(\B{d}) = \B{d}\B{\theta}$ where $\B{\theta}\in \mathbb{R}^{d}$. 
 It is also common to augment the data set with an additional dimension set to 1, such that $\phi_\theta$ also models the intercept such that $\B{d} \in \mathbb{R}^{\ell \times d + 1}$ and $\theta \in \mathbb{R}^{d + 1}$. In this case $\theta_{d+1}$ will then be the intercept.\\
 
@@ -61,7 +61,7 @@ The last term of \eqref{eq:bayes-rule} is the marginal distribution $p(\B{y}| \B
 This term is difficult to make any reasonable assumptions about, and can thus hard to compute in practice.
 Luckily, it mostly acts as a normalization term that makes sure that the posterior distribution integrates to 1, so it can for many use cases be safely ignored.
 As we will see, for a linear regression problems with these assumptions, we will indeed not need it.
-\subsubsection{An analytical solution for the posterior distribution}
+\subsubsection{An Analytical Solution for the Posterior Distribution}
 Let us outline a possible derivation for the posterior distribution: Given the likelihood and prior, we can describe the joint distribution $p(\theta, \B{y} | \B{d})$ as
 \begin{equation}
   \label{eq:joint}
@@ -179,7 +179,7 @@ With the conditioning lemma, we get the posterior distribution $p(\theta | \B{y}
   \Sigma_{\theta | \B{y}, \B{d}} = \Sigma_\theta - \Sigma_\theta \B{d}^T (\B{d} \Sigma_\theta \B{d}^T + \sigma^2_\B{y} I_\ell)^{-1}\B{d}\Sigma_\theta
 \end{equation}
 Thus we have an analytical expression for the posterior distribution.
-\subsubsection{Using the posterior to optain model parameters}
+\subsubsection{Using the Posterior to Obtain Model Parameters}
 From this distribution, we can obtain model parameters in several ways. 
 A common choice is to pick the $\theta$ that maximizes the posterior. This is called the \textit{Maximum-a-posteriori} (MAP) estimate, and will for a normal distribution just be the posterior mean $\mu_{\theta | \B{y}, \B{d}}$.
 For other cases than linear regression, one can also use a mean over samples of $\theta$ from the posterior distribution, but for our case, this will converge against the posterior mean $\mu_{\theta | \B{y}, \B{d}}$.

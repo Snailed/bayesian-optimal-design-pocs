@@ -4,8 +4,8 @@ For the final section of the project, we will try to see how to combine the Baye
 leading to a general framework for Bayesian Optimal Design that scales to many different kinds of model.
 % The objective of this week is to integrate our Bayesian Optimal Design optimizer from week 2 with our linear regression variational inference optimizer from week 3.
 \subsection{Theory}
-\subsubsection{Finding the gradient of the Mutual Information}
-In week 2, we neatly assumed that \textt{autograd.grad} was able to find the gradient 
+\subsubsection{Finding the Gradient of the Mutual Information}
+In week 2, we neatly assumed that \texttt{autograd.grad} was able to find the gradient 
 of the mutual information with respect to $\B{d}$. 
 When one uses variational inference to compute the posterior, this becomes nontrivial, since one needs to differentiate through the parameters as a function of the design $\B{d}$ \cite{lorraine19}.
 We can see this from \eqref{eq:mi}:
@@ -57,19 +57,20 @@ If the hessian then is invertible, we must have:
   \label{eq:variational-jacobian}
 \end{equation}
 Computing both the variational hessian and the variational mixed partials should then be possible using automatic differentiation.
-\subsubsection{Adapting to sampling}
+\subsubsection{Adapting to Sampling}
 Again, we will approach calculating the expectations using Monte Carlo sampling. From \eqref{eq:variational-mi-2}, we will instead compute
 \begin{equation}\nabla_\B{d} I(\B{d}) \approx \sum_{i}^N \sum_{j}^M \frac{1}{q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})}\times \nabla_{\B{d}}q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})\end{equation}
 $$\ \textrm{where}\ \B{y}_{ij} = \B{d}\theta_j + \epsilon_i,\ \theta_j = \mu_\theta + \B{A}_\theta\B{z}_j,\ \epsilon_i \sim \mathcal{N}(0, \sigma^2_\B{y} I_\ell),\ \B{z} \sim \mathcal{N}(0, I_M)$$
 To try to keep numerically stable, we will use the log-sum-exp trick:
 \begin{equation}= \sum_{i}^N \sum_{j}^M \exp (\log \nabla_{\B{d}}q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})- \log q^*_{\B{d}, \B{y}_{ij}}(\theta_{j})I_\ell) \label{eq:sample-mi-var}\end{equation}
 
+
 \subsection{Implementation}
-\subsubsection{Reducing computation time}
+\subsubsection{Reducing Computation Time}
 Since both the Mutual Information gradient and variational inference algorithm utilize sampling, a naive implementation could easily end up with many nested for-loops.
 To reduce this, batching techniques can be used to delegate computation to \texttt{numpy}, which can perform them in a lower level language. 
-A big bottleneck is the computation of the Hessian and Jacobian of \eqref{eq:variational-jacobian}, which can be sped up by using more modern automatic differentiation libraries than \textt{autograd}.
-\subsubsection{Correctness of implementation}
+A big bottleneck is the computation of the Hessian and Jacobian of \eqref{eq:variational-jacobian}, which can be sped up by using more modern automatic differentiation libraries than \texttt{autograd}.
+\subsubsection{Correctness of Implementation}
 Since we have the code and theoretical knowledge for each of the components that this implementation is composed of, 
 we can test each part of the implementation by comparing it to its analytical counterpart. 
 For example, one can replace the variational approximation with the analytical posterior to see how the variational approximation change the convergence of the Mutual Information metric.
